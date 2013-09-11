@@ -1,0 +1,86 @@
+{{set . "title" "Upload CP files"}}
+{{$models := .models}}
+{{template "header.html" .}}
+{{.flash.error}}
+<h1>Upload CP:</h1>
+
+<div id="CP">
+    <form enctype="multipart/form-data" action="{{url "Radio.PostUpload"}}" method="POST" class="form-inline">
+    {{with $field := field "upload.Model" .}}
+    <p class="field">
+      <label>Model:</label>
+        <select name="{{$field.Name}}">
+        {{range $k, $v := $models}}
+            {{option $field $v $v }}
+        {{end}}
+        </select>
+    </p>
+    {{end}}
+    <p>------------------------------------------------------</p>
+    <div class="field">
+            <label>Single Files:</label> <br>
+            <p class="field">
+            <label>Type: (1:single, 2:dsds)</label>
+            {{with $field := field "upload.Single.Type" .}}
+            <input type="text" name="{{$field.Name}}" size="19" value="1" />
+            {{end}}
+            </p>
+            <p class="field">
+            <label>Version: (fmt: X:XXX:XXX)</label>
+            {{with $field := field "upload.Single.VersionStr" .}}
+            <input type="text" name="{{$field.Name}}" size="19" value="{{or $field.Flash $field.Value}}" />
+            {{end}}
+            </p>
+            <p class="field">
+                <label for="photos">single_cp:</label> <input id="single_cp" name="single_cp" type="file" accept="application/*"/> <br>
+                <label for="photos">single_dsp:</label> <input id="single_dsp" name="single_dsp" type="file" accept="application/*"/> <br>
+            </p>
+            <p>------------------------------------------------------</p>
+            <label>Dsds Files:</label> <br>
+            <p class="field">
+            <label>Type: (1:single, 2:dsds)</label>
+            {{with $field := field "upload.Dsds.Type" .}}
+            <input type="text" name="{{$field.Name}}" size="19" value="2" />
+            {{end}}
+            </p>
+            <p class="field">
+            <label>Version: (fmt: X:XXX:XXX)</label>
+            {{with $field := field "upload.Dsds.VersionStr" .}}
+            <input type="text" name="{{$field.Name}}" size="19" value="{{or $field.Flash $field.Value}}" />
+            {{end}}
+            </p>
+            <p class="field">
+            <label for="photos">dsds_cp:</label> <input id="dsds_cp" name="dsds_cp" type="file" accept="application/*"/> <br>
+            <label for="photos">dsds_dsp:</label> <input id="dsds_dsp" name="dsds_dsp" type="file" accept="application/*"/> <br>
+            </p>
+        </div>
+    <p>------------------------------------------------------</p>
+    <p class="buttons">
+      <input type="submit" value="Upload" />
+    </p>
+    
+    <!--
+    {{with $field := field "loginUser.User.UserName" .}}
+    <p class="field">
+      <label>Login Name:</label>
+      <input type="text" name="{{$field.Name}}" size="19" value="{{or $field.Flash $field.Value}}" />
+      <span class="error">{{$field.Error}}</span>
+    </p>
+    {{end}}
+
+    {{with $field := field "loginUser.PasswordStr" .}}
+    <p class="field">
+      <label>Password:</label>
+      <input type="password" name="{{$field.Name}}" size="19" value="{{or $field.Flash $field.Value}}" />
+      <span class="error">{{$field.Error}}</span>
+    </p>
+    {{end}}
+
+    <p class="buttons">
+      <input type="submit" value="Account register" />
+    </p>
+    -->
+    </form>
+</div>
+
+{{template "footer.html" .}}
