@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"github.com/jsli/ota/radio/app/constant"
 	"regexp"
 	"strconv"
 	"strings"
@@ -10,8 +11,6 @@ import (
 var FILE_KEY_LIST = [4]string{"single_cp", "single_dsp", "dsds_cp", "dsds_dsp"}
 var FILE_OFFSET_LIST = [4]int64{0, 8388608, 10485760, 18874368}
 
-var TYPE_LIST = []string{"single", "dsds"}
-var MODEL_LIST = []string{"pxa986ff_def", "pxa988ff_def", "pxa1088ff_def", "pxa1t88ff_def"}
 var MODEL_2_CPPREFIX = map[string]string{"pxa986ff_def": "KL", "pxa988ff_def": "EM", "pxa1088ff_def": "HL_WB", "pxa1t88ff_def": "HL_TD"}
 
 //HLTD_CP_2.48.000:TTD_WK_HLTD_MSA_2.48.000
@@ -27,7 +26,7 @@ func IsAvailableCPV(cpv string) (bool, string) {
 }
 
 func IsAvailableType(t string) bool {
-	for _, _t := range TYPE_LIST {
+	for _, _t := range constant.TYPE_LIST {
 		if t == _t {
 			return true
 		}
@@ -36,7 +35,7 @@ func IsAvailableType(t string) bool {
 }
 
 func IsAvailableModel(model string) bool {
-	for _, m := range MODEL_LIST {
+	for _, m := range constant.MODEL_LIST {
 		if model == m {
 			return true
 		}

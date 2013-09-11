@@ -36,3 +36,6 @@ var CP_VERSION_REX = regexp.MustCompile(`^\d+\.\d+\.\d+$`)
 
 var COPY_FILE_LIST []string = []string{"SYSTEM/build.prop", "RECOVERY/RAMDISK/etc/recovery.fstab"}
 var COPY_DIR_LIST []string = []string{"OTA/", "META/"}
+var TYPE_LIST = []string{"single", "dsds"}
+var MODEL_LIST = []string{"pxa986ff_def", "pxa988ff_def", "pxa1088ff_def", "pxa1t88ff_def"}
+var UPLOAD_FILE_LIST = []string{"cp", "dsp"}

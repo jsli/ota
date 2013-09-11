@@ -10,7 +10,7 @@ import (
 	"github.com/jsli/ota/radio/app/models"
 	"github.com/jsli/ota/radio/app/utils"
 	"github.com/robfig/revel"
-	"os"
+	//	"os"
 	"time"
 )
 
@@ -184,16 +184,8 @@ func (c Radio) Query() revel.Result {
 	}
 	defer dal.Close()
 
-	if params["type"] == "single" {
-		query = fmt.Sprintf("SELECT single_version_str FROM radio_image where model = '%s' and %s > %d", params["model"], "single_version", cpv_int)
-	} else if params["type"] == "dsds" {
-		query = fmt.Sprintf("SELECT dsds_version_str FROM radio_image where model = '%s' and %s > %d", params["model"], "dsds_version", cpv_int)
-	} else {
-		msg := fmt.Sprintf("wrong params type=%s, should be 'single' or 'dsds' only!\n", params["type"])
-		log.Log(tag, msg)
-		extra["error"] = msg
-		return c.RenderJson(result)
-	}
+	query = fmt.Sprintf("SELECT version FROM cp_source_file where model='%s' and type='%s' and version_scalar > %d",
+		params["model"], params["type"], cpv_int)
 	log.Log(tag, fmt.Sprintf("query : %s \n", query))
 	rows, err = dal.Link.Query(query)
 	if err != nil {
@@ -218,13 +210,101 @@ func (c Radio) Query() revel.Result {
 }
 
 func (c Radio) GetUpload() revel.Result {
-	models := utils.MODEL_LIST
-	return c.Render(models)
+	models := constant.MODEL_LIST
+	types := constant.TYPE_LIST
+	return c.Render(models, types)
 }
 
-func (c Radio) PostUpload(upload *models.RadioImageFile) revel.Result {
+func (c Radio) PostUpload(ca *models.CpAtomic) revel.Result {
 	tag := "PostUpload"
+	log.Log(tag, "In Process PostUpload")
 
+	dal, err := models.NewDal(models.DRIVER, models.DNS)
+	if err != nil {
+		log.Log(tag, fmt.Sprintf("New dal error: %s\n", err))
+		c.Validation.Keep()
+		c.FlashParams()
+		c.Flash.Error("Server internal error")
+		return c.Redirect(Radio.PostUpload)
+	}
+
+	ca.Validate(c.Validation, dal)
+	if c.Validation.HasErrors() {
+		c.Validation.Keep()
+		c.FlashParams()
+		return c.Redirect(Radio.PostUpload)
+	}
+	ca.VersionScalar = utils.ConvertVersion2Int64(ca.Version)
+
+	//path : upload_root/$model/$type/$version/
+	root := fmt.Sprintf("%s%s/%s/%s/", constant.UPLOAD_ROOT_DIR, ca.Model, ca.Type, ca.Version)
+	utils.Delete(root)
+	utils.TouchDir(root, 0)
+
+	/**************************
+	directory arch
+	.
+	├── pxa1t88ff_def
+	│   └── dsds
+	│       └── 2.23.000
+	│           ├── dsds_cp.bin
+	│           └── dsds_dsp.bin
+	└── pxa986ff_def
+	    ├── dsds
+	    │   └── 12.32.321
+	    │       ├── dsds_cp.bin
+	    │       └── dsds_dsp.bin
+	    └── single
+	        └── 123.123.123
+	            ├── single_cp.bin
+	            └── single_dsp.bin
+	**************************/
+	//save upload files
+	for _, key := range constant.UPLOAD_FILE_LIST {
+		log.Log(tag, fmt.Sprintf("check upload file : %s", key))
+		fh_arr, ok := c.Params.Files[key]
+		if !ok || len(fh_arr) <= 0 {
+			utils.Delete(root)
+			log.Log(tag, fmt.Sprintf("loss upload file : %s", key))
+			c.Validation.Keep()
+			c.FlashParams()
+			c.Flash.Error(fmt.Sprintf("loss upload file : %s", key))
+			return c.Redirect(Radio.PostUpload)
+		}
+		fh := fh_arr[0]
+		log.Log(tag, fmt.Sprintf("got upload file : %s", key))
+		input, err := fh.Open()
+		if err != nil {
+			utils.Delete(root)
+			c.Validation.Keep()
+			c.FlashParams()
+			c.Flash.Error(fmt.Sprintf("Failed to open file %s :\n err = %s", fh.Filename, err))
+			return c.Redirect(Radio.PostUpload)
+		}
+		defer input.Close()
+
+		//file name : root/$type_cp.bin or root/$type_dsp.bin
+		err = utils.CopyFile(input, fmt.Sprintf("%s%s_%s.bin", root, ca.Type, key))
+		if err != nil {
+			utils.Delete(root)
+			c.Validation.Keep()
+			c.FlashParams()
+			c.Flash.Error("Server internal error")
+			return c.Redirect(Radio.PostUpload)
+		}
+	}
+
+	err = ca.Save(dal)
+	if err != nil {
+		utils.Delete(root)
+		log.Log(tag, fmt.Sprintf("Failed to save upload info : %s,  err = %s\n", ca, err))
+		c.Validation.Keep()
+		c.FlashParams()
+		c.Flash.Error("Server internal error")
+		return c.Redirect(Radio.PostUpload)
+	}
+	return c.Redirect(Radio.Index)
+	/***********************************
 	upload.Validate(c.Validation)
 	if c.Validation.HasErrors() {
 		c.Validation.Keep()
@@ -371,4 +451,5 @@ func (c Radio) PostUpload(upload *models.RadioImageFile) revel.Result {
 	}
 
 	return c.Redirect(Radio.Index)
+	*************************************/
 }

@@ -3,7 +3,7 @@ package models
 import (
 	"fmt"
 	"github.com/jsli/ota/radio/app/constant"
-	"github.com/jsli/ota/radio/app/utils"
+//	"github.com/jsli/ota/radio/app/utils"
 	"github.com/jsli/ota/radio/app/log"
 	"github.com/robfig/revel"
 	"io"
@@ -62,16 +62,16 @@ func (f *RadioImageFile) Validate(v *revel.Validation) {
 	).Message("Illegal dsds version")
 }
 
-type LegalModelValidator struct {
-}
-
-func (legal LegalModelValidator) IsSatisfied(obj interface{}) bool {
-	return utils.IsAvailableModel(obj.(string))
-}
-
-func (legal LegalModelValidator) DefaultMessage() string {
-	return "Illegal model"
-}
+//type LegalModelValidator struct {
+//}
+//
+//func (legal LegalModelValidator) IsSatisfied(obj interface{}) bool {
+//	return utils.IsAvailableModel(obj.(string))
+//}
+//
+//func (legal LegalModelValidator) DefaultMessage() string {
+//	return "Illegal model"
+//}
 
 func (f *RadioImageFile) Save(dal *Dal) error {
 	tag := "RadioImageFile.Save"
