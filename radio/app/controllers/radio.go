@@ -233,8 +233,26 @@ func (c Radio) PostUpload(upload *models.RadioImageFile) revel.Result {
 	}
 
 	//convert version_str to version_int for using in db
+	upload.Single.Type = "single"
 	upload.Single.VersionInt = utils.ConvertVersion2Int64(upload.Single.VersionStr)
+	upload.Dsds.Type = "dsds"
 	upload.Dsds.VersionInt = utils.ConvertVersion2Int64(upload.Dsds.VersionStr)
+
+	dal, err := models.NewDal(models.DRIVER, models.DNS)
+	if err != nil {
+		log.Log(tag, fmt.Sprintf("New dal error: %s\n", err))
+		c.Validation.Keep()
+		c.FlashParams()
+		c.Flash.Error("Server internal error")
+		return c.Redirect(Radio.PostUpload)
+	}
+	defer dal.Close()
+	if b, err := models.IsDuplicateRadioImage(dal, upload.Model, upload.Single.VersionStr, upload.Dsds.VersionStr); b {
+		c.Validation.Keep()
+		c.FlashParams()
+		c.Flash.Error(fmt.Sprintf("%s", err))
+		return c.Redirect(Radio.PostUpload)
+	}
 
 	//mkdir for cp files
 	//dir struct like this:
@@ -265,7 +283,7 @@ func (c Radio) PostUpload(upload *models.RadioImageFile) revel.Result {
 	utils.TouchDir(single, 0)
 	utils.TouchDir(dsds, 0)
 	dsds_symlink := fmt.Sprintf("%s%s", dsds, upload.Dsds.VersionStr)
-	err := os.Symlink(single, dsds_symlink)
+	err = os.Symlink(single, dsds_symlink)
 	if err != nil {
 		utils.Delete(single)
 		utils.Delete(dsds_symlink)
@@ -341,17 +359,6 @@ func (c Radio) PostUpload(upload *models.RadioImageFile) revel.Result {
 		return c.Redirect(Radio.PostUpload)
 	}
 
-	dal, err := models.NewDal(models.DRIVER, models.DNS)
-	if err != nil {
-		utils.Delete(single)
-		utils.Delete(dsds_symlink)
-		log.Log(tag, fmt.Sprintf("New dal error: %s\n", err))
-		c.Validation.Keep()
-		c.FlashParams()
-		c.Flash.Error("Server internal error")
-		return c.Redirect(Radio.PostUpload)
-	}
-	defer dal.Close()
 	err = upload.Save(dal)
 	if err != nil {
 		utils.Delete(single)

@@ -8,6 +8,7 @@ import (
 	"github.com/robfig/revel"
 	"io"
 	"os"
+	"errors"
 )
 
 type ImageFileComponent struct {
@@ -21,7 +22,7 @@ func (comp ImageFileComponent) String() string {
 }
 
 type CpFile struct {
-	Type       int `1:single, 2:dsds`
+	Type       string `single or dsds`
 	VersionInt int64
 	VersionStr string
 	Cp         ImageFileComponent
@@ -29,7 +30,7 @@ type CpFile struct {
 }
 
 func (cp CpFile) String() string {
-	return fmt.Sprintf("CpFile(Type=%d, v_int=%d, v_str=%s, cp=%s, dsp=%s)",
+	return fmt.Sprintf("CpFile(Type=%s, v_int=%d, v_str=%s, cp=%s, dsp=%s)",
 		cp.Type, cp.VersionInt, cp.VersionStr, cp.Cp, cp.Dsp)
 }
 
@@ -87,6 +88,19 @@ func (f *RadioImageFile) Save(dal *Dal) error {
 
 	//	id, err := res.LastInsertId()
 	return nil
+}
+
+func IsDuplicateRadioImage(dal *Dal, model string, single_version string, dsds_version string) (bool, error) {
+	var id int = -1
+	row := dal.Link.QueryRow(fmt.Sprintf("SELECT id FROM radio_image where model='%s' and (single_version_str='%s' or dsds_version_str='%s')", model, single_version, dsds_version))
+	err := row.Scan(&id)
+	if err != nil || id < 0 {
+		return false, errors.New(fmt.Sprintf("query radio image failed: %s", err))
+	}
+	if (id >= 0) {
+		return true, errors.New(fmt.Sprintf("dupliated radio image : %d", id))
+	}
+	return false, nil
 }
 
 func GenerateImageFile(comp_file_root string, comp_list []ImageFileComponent, img_size int64, dest string) error {

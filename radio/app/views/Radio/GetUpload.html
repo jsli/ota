@@ -20,12 +20,6 @@
     <div class="field">
             <label>Single Files:</label> <br>
             <p class="field">
-            <label>Type: (1:single, 2:dsds)</label>
-            {{with $field := field "upload.Single.Type" .}}
-            <input type="text" name="{{$field.Name}}" size="19" value="1" />
-            {{end}}
-            </p>
-            <p class="field">
             <label>Version: (fmt: X:XXX:XXX)</label>
             {{with $field := field "upload.Single.VersionStr" .}}
             <input type="text" name="{{$field.Name}}" size="19" value="{{or $field.Flash $field.Value}}" />
@@ -37,12 +31,6 @@
             </p>
             <p>------------------------------------------------------</p>
             <label>Dsds Files:</label> <br>
-            <p class="field">
-            <label>Type: (1:single, 2:dsds)</label>
-            {{with $field := field "upload.Dsds.Type" .}}
-            <input type="text" name="{{$field.Name}}" size="19" value="2" />
-            {{end}}
-            </p>
             <p class="field">
             <label>Version: (fmt: X:XXX:XXX)</label>
             {{with $field := field "upload.Dsds.VersionStr" .}}
