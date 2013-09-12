@@ -2,8 +2,7 @@ package models
 
 import (
 	"database/sql"
-	"fmt"
-	"github.com/jsli/ota/radio/app/log"
+	_ "github.com/go-sql-driver/mysql"
 )
 
 const (
@@ -15,11 +14,9 @@ type Dal struct {
 	Link *sql.DB
 }
 
-func NewDal(driver string, dns string) (*Dal, error) {
-	tag := "NewDal"
-	db, err := sql.Open(driver, dns)
+func NewDal() (*Dal, error) {
+	db, err := sql.Open(DRIVER, DNS)
 	if err != nil {
-		log.Log(tag, fmt.Sprintf("Open %s : %s error : %s", driver, dns, err))
 		return nil, err
 	}
 	return &Dal{db}, nil
