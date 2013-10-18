@@ -4,12 +4,10 @@ import (
 	"fmt"
 	cp_constant "github.com/jsli/cp_release/constant"
 	cp_policy "github.com/jsli/cp_release/policy"
+	"github.com/jsli/gtbox/file"
 	"github.com/jsli/gtbox/ota"
 	ota_constant "github.com/jsli/ota/radio/app/constant"
-	//	"github.com/jsli/ota/radio/app/models"
-	"github.com/jsli/gtbox/file"
 	"github.com/robfig/revel"
-	//	"mime/multipart"
 	"os"
 	"strings"
 )
@@ -26,6 +24,7 @@ type CpImage struct {
 	Network string
 	Sim     string
 	Path    string
+	Prefix  string
 	Version string
 	Mode    string
 }
@@ -39,6 +38,7 @@ func (ci *CpImage) LoadSelf(attrs []string) {
 	slice := strings.Split(attrs[3], "/")
 	ci.Mode = slice[0]
 	ci.Version = cp_policy.ExtractVersion(slice[1])
+	ci.Prefix = strings.TrimSuffix(slice[1], ci.Version)
 }
 
 func (ci *CpImage) Validate() (err error) {
@@ -52,12 +52,14 @@ type CpInfo struct {
 	Version  string
 	Network  string
 	Sim      string
+	Prefix   string
 	ImageMap map[string]*CpImage
 }
 
 type ParsedParams struct {
 	DtimPath string
 	Type     string
+	HasRFIC  bool
 	CpMap    map[string]*CpInfo
 }
 
@@ -95,7 +97,7 @@ func (v *RadioValidator) PostValidate(params *revel.Params) (*ParsedParams, erro
 	}
 
 	//	images, err := ota.ParseDtim(rand_file_path)
-	images, err := ota_constant.TestDataHLTD, nil
+	images, err := ota_constant.TestDataLTER, nil
 	if err != nil {
 		return nil, err
 	}
@@ -114,12 +116,16 @@ func (v *RadioValidator) PostValidate(params *revel.Params) (*ParsedParams, erro
 	count := len(images)
 	switch count {
 	case 2:
+		parsedParams.HasRFIC = false
 		parsedParams.Type = ota_constant.TYPE_SINGLE
 	case 3:
+		parsedParams.HasRFIC = true
 		parsedParams.Type = ota_constant.TYPE_SINGLE_RFIC
 	case 4:
+		parsedParams.HasRFIC = false
 		parsedParams.Type = ota_constant.TYPE_DSDS
 	case 6:
+		parsedParams.HasRFIC = true
 		parsedParams.Type = ota_constant.TYPE_DSDS_RFIC
 	default:
 		return nil, fmt.Errorf("Illegal cp information from %s, image count must be 2 or 4, NOT %d", rand_file_path, count)
@@ -150,6 +156,7 @@ func (v *RadioValidator) PostValidate(params *revel.Params) (*ParsedParams, erro
 		cp_info.Network = cp_image_list[3].Network
 		cp_info.Sim = cp_image_list[3].Sim
 		cp_info.Version = cp_image_list[3].Version
+		cp_info.Prefix = cp_image_list[3].Prefix
 		cp_info.ImageMap[ota_constant.ID_ARB2] = cp_image_list[3]
 		cp_info.ImageMap[ota_constant.ID_GRB2] = cp_image_list[4]
 		cp_info.ImageMap[ota_constant.ID_RFI2] = cp_image_list[5]
@@ -162,6 +169,7 @@ func (v *RadioValidator) PostValidate(params *revel.Params) (*ParsedParams, erro
 		cp_info.Network = cp_image_list[0].Network
 		cp_info.Sim = cp_image_list[0].Sim
 		cp_info.Version = cp_image_list[0].Version
+		cp_info.Prefix = cp_image_list[0].Prefix
 		cp_info.ImageMap[ota_constant.ID_ARBI] = cp_image_list[0]
 		cp_info.ImageMap[ota_constant.ID_GRBI] = cp_image_list[1]
 		cp_info.ImageMap[ota_constant.ID_RFIC] = cp_image_list[2]
@@ -173,6 +181,7 @@ func (v *RadioValidator) PostValidate(params *revel.Params) (*ParsedParams, erro
 		cp_info.Network = cp_image_list[2].Network
 		cp_info.Sim = cp_image_list[2].Sim
 		cp_info.Version = cp_image_list[2].Version
+		cp_info.Prefix = cp_image_list[2].Prefix
 		cp_info.ImageMap[ota_constant.ID_ARB2] = cp_image_list[2]
 		cp_info.ImageMap[ota_constant.ID_GRB2] = cp_image_list[3]
 		parsedParams.CpMap[ota_constant.TYPE_DSDS] = cp_info
@@ -184,6 +193,7 @@ func (v *RadioValidator) PostValidate(params *revel.Params) (*ParsedParams, erro
 		cp_info.Network = cp_image_list[0].Network
 		cp_info.Sim = cp_image_list[0].Sim
 		cp_info.Version = cp_image_list[0].Version
+		cp_info.Prefix = cp_image_list[0].Prefix
 		cp_info.ImageMap[ota_constant.ID_ARBI] = cp_image_list[0]
 		cp_info.ImageMap[ota_constant.ID_GRBI] = cp_image_list[1]
 		parsedParams.CpMap[ota_constant.TYPE_SINGLE] = cp_info

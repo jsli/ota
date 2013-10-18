@@ -3,17 +3,11 @@ package controllers
 import (
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
-	//	cp_constant "github.com/jsli/cp_release/constant"
 	"github.com/jsli/cp_release/release"
-	//	ota_constant "github.com/jsli/ota/radio/app/constant"
-	//	"github.com/jsli/ota/radio/app/log"
 	"github.com/jsli/ota/radio/app/models"
 	"github.com/jsli/ota/radio/app/policy"
-	//	"github.com/jsli/ota/radio/app/utils"
 	"github.com/robfig/revel"
 	"net/http"
-
-//	"time"
 )
 
 type Radio struct {
@@ -44,8 +38,6 @@ func (c Radio) OtaCreate() revel.Result {
 	var versions string
 	c.Params.Bind(&versions, "version")
 	fmt.Println(versions)
-
-	//check version
 
 	result := models.NewRadioOtaReleaseResult()
 	err = policy.ProvideRadioRelease(dal, parsedParams, result, versions)
@@ -83,10 +75,10 @@ func (c Radio) Query() revel.Result {
 	validator := &policy.RadioValidator{}
 	parsedParams, err := validator.PostValidate(c.Params)
 	if err != nil {
+		fmt.Println(err)
 		c.Response.Status = http.StatusBadRequest
 		return c.RenderJson(nil)
 	}
-
 	dal, err := release.NewDal()
 	if err != nil {
 		c.Response.Status = http.StatusInternalServerError

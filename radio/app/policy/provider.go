@@ -5,6 +5,7 @@ import (
 	cp_constant "github.com/jsli/cp_release/constant"
 	cp_policy "github.com/jsli/cp_release/policy"
 	"github.com/jsli/cp_release/release"
+	"github.com/jsli/gtbox/file"
 	ota_constant "github.com/jsli/ota/radio/app/constant"
 	"github.com/jsli/ota/radio/app/models"
 	"strings"
@@ -45,147 +46,160 @@ func ProvideRadioRelease(dal *models.Dal, parsedParams *ParsedParams, result *mo
 }
 
 func ProvideQueryData(dal *release.Dal, parsedParams *ParsedParams, result *models.QueryResult) error {
-	switch parsedParams.Type {
-	case ota_constant.TYPE_DSDS, ota_constant.TYPE_DSDS_RFIC:
-		data, err := generateQueryData(dal, parsedParams.CpMap[parsedParams.Type], parsedParams.Type)
+	for _, cp_info := range parsedParams.CpMap {
+		data, err := getCpAndImages(dal, cp_info, parsedParams.HasRFIC)
 		if err != nil {
 			return err
 		}
-		result.Data[ota_constant.TYPE_DSDS] = data
-		fallthrough
-	case ota_constant.TYPE_SINGLE, ota_constant.TYPE_SINGLE_RFIC:
-		data, err := generateQueryData(dal, parsedParams.CpMap[parsedParams.Type], parsedParams.Type)
-		if err != nil {
-			return err
-		}
-		result.Data[ota_constant.TYPE_SINGLE] = data
+		filterByParams(data, parsedParams)
+		filterByRuleFile(data, cp_info)
+		result.Data[cp_info.Mode] = data
 	}
 	return nil
 }
 
-func generateQueryData(dal *release.Dal, cp_info *CpInfo, _type string) (map[string]map[string][]string, error) {
-	cp_list, err := getCpVersionList(dal, cp_info)
+func filterByParams(data map[string]map[string][]string, parsedParams *ParsedParams) {
+}
+
+func filterByRuleFile(data map[string]map[string][]string, cp_info *CpInfo) {
+	filter_map := make(map[string][]string)
+	for _, key := range ota_constant.KEY_LIST {
+		filter_map[key] = getFilterList(cp_info.Mode, key)
+	}
+
+	for key, _ := range data {
+		original_data := data[key]
+		for key, value := range original_data {
+			filter := filter_map[key]
+			filtered := make([]string, 0, 10)
+			for _, path := range value {
+				if check(path, filter) {
+					filtered = append(filtered, path)
+				} else {
+					fmt.Println("Drop " + path)
+				}
+			}
+			fmt.Printf("filtered %s", filtered)
+			original_data[key] = filtered
+		}
+	}
+}
+
+func getFilterList(mode string, key string) []string {
+	path := fmt.Sprintf("%s%s_%s", cp_constant.FILTER_ROOT, mode, key)
+	content, err := file.ReadFile(path)
+	if err != nil {
+		fmt.Println(err)
+		return nil
+	}
+	content = strings.TrimSpace(content)
+	return strings.Split(content, "\n")
+}
+
+func check(str string, filter []string) bool {
+	for _, value := range filter {
+		if strings.Contains(str, value) {
+			return false
+		}
+	}
+	return true
+}
+
+/*
+ * return:
+ * map[string]map[string][]string : map[CP_VERSION] map[IMAGE_KEY] images list
+ * @IMAGE_ID refer to
+ *	KEY_ARBEL = "ARBEL"
+ *	KEY_MSA = "MSA"
+ *	KEY_RFIC = "RFIC"
+ */
+func getCpAndImages(dal *release.Dal, cp_info *CpInfo, hasRFIC bool) (map[string]map[string][]string, error) {
+	cp_list, err := getCpList(dal, cp_info)
 	if err != nil {
 		return nil, err
 	}
-	if cp_list != nil && len(cp_list) > 0 {
+
+	if cp_list != nil {
 		data := make(map[string]map[string][]string)
-		mode := cp_info.Mode
-		sim := cp_info.Sim
-		for _, cp_version := range cp_list {
-			image_list, err := getImageList(dal, mode, sim, cp_version, _type)
+		for _, cp := range cp_list {
+			image_list, err := getImagesByCp(dal, cp, hasRFIC)
 			if err != nil {
 				return nil, err
 			}
-			data[cp_version] = image_list
+			data[cp.Version] = image_list
 		}
 		return data, nil
 	}
 	return nil, nil
 }
 
-func getImageList(dal *release.Dal, mode string, sim string, cp_version string, _type string) (map[string][]string, error) {
+/*
+ * return:
+ * map[string][]string : map[CP_VERSION] images list
+ */
+func getImagesByCp(dal *release.Dal, cp *release.CpRelease, hasRFIC bool) (map[string][]string, error) {
 	data := make(map[string][]string)
 
-	arbi_list, err := getArbiList(dal, mode, sim, cp_version, _type)
+	arbi_list, err := getArbiList(dal, cp)
 	if err != nil {
 		return nil, err
 	}
+	if arbi_list != nil {
+		data[ota_constant.KEY_ARBEL] = arbi_list
+	}
 
-	grbi_list, err := getGrbiList(dal, mode, sim, cp_version, _type)
+	grbi_list, err := getGrbiList(dal, cp)
 	if err != nil {
 		return nil, err
 	}
-
-	rfic_list, err := getRficList(dal, mode, sim, cp_version, _type)
-	if err != nil {
-		return nil, err
+	if grbi_list != nil {
+		data[ota_constant.KEY_MSA] = grbi_list
 	}
 
-	switch _type {
-	case ota_constant.TYPE_SINGLE:
-		if arbi_list != nil && len(arbi_list) > 0 {
-			data[ota_constant.ID_ARBI] = arbi_list
+	if hasRFIC {
+		rfic_list, err := getRficList(dal, cp)
+		if err != nil {
+			return nil, err
 		}
-		if grbi_list != nil && len(grbi_list) > 0 {
-			data[ota_constant.ID_GRBI] = grbi_list
+		if rfic_list != nil {
+			data[ota_constant.KEY_RFIC] = rfic_list
 		}
-	case ota_constant.TYPE_DSDS:
-		if arbi_list != nil && len(arbi_list) > 0 {
-			data[ota_constant.ID_ARB2] = arbi_list
-		}
-		if grbi_list != nil && len(grbi_list) > 0 {
-			data[ota_constant.ID_GRB2] = grbi_list
-		}
-	case ota_constant.TYPE_SINGLE_RFIC:
-		if arbi_list != nil && len(arbi_list) > 0 {
-			data[ota_constant.ID_ARBI] = arbi_list
-		}
-		if grbi_list != nil && len(grbi_list) > 0 {
-			data[ota_constant.ID_GRBI] = grbi_list
-		}
-		if rfic_list != nil && len(rfic_list) > 0 {
-			data[ota_constant.ID_RFIC] = rfic_list
-		}
-	case ota_constant.TYPE_DSDS_RFIC:
-		if arbi_list != nil && len(arbi_list) > 0 {
-			data[ota_constant.ID_ARB2] = arbi_list
-		}
-		if grbi_list != nil && len(grbi_list) > 0 {
-			data[ota_constant.ID_GRB2] = grbi_list
-		}
-		if rfic_list != nil && len(rfic_list) > 0 {
-			data[ota_constant.ID_RFI2] = rfic_list
-		}
-	default:
-		return nil, fmt.Errorf("Unknow type : %s", _type)
 	}
 
 	return data, nil
 }
 
-func getArbiList(dal *release.Dal, mode string, sim string, cp_version string, _type string) ([]string, error) {
-	query := fmt.Sprintf("SELECT * FROM %s WHERE mode='%s' AND sim='%s' AND version='%s' AND flag=%d",
-		cp_constant.TABLE_CP, mode, sim, cp_version, cp_constant.AVAILABLE_FLAG)
-	cp, err := release.FindCpRelease(dal, query)
-	if err != nil {
-		return nil, err
-	}
-
+func getArbiList(dal *release.Dal, cp *release.CpRelease) ([]string, error) {
 	arbi_list := make([]string, 0, 10)
-	query = fmt.Sprintf("SELECT * FROM %s where cp_id=%d AND flag=%d", cp_constant.TABLE_ARBI, cp.Id, cp_constant.AVAILABLE_FLAG)
+	query := fmt.Sprintf("SELECT * FROM %s where cp_id=%d AND flag=%d", cp_constant.TABLE_ARBI, cp.Id, cp_constant.AVAILABLE_FLAG)
 	arbis, err := release.FindArbiList(dal, query)
 	if err != nil {
 		return nil, err
 	}
 
 	if len(arbis) == 0 {
-		return nil, nil
+		return nil, fmt.Errorf("Cannot find the right Image.")
 	}
 
 	for _, arbi := range arbis {
-		rel_path := arbi.RelPath
-		if !strings.Contains(rel_path, "/RFIC/") {
-			arbi_list = append(arbi_list, arbi.RelPath)
-		}
+		arbi_list = append(arbi_list, arbi.RelPath)
 	}
 	return arbi_list, nil
 }
 
-func getGrbiList(dal *release.Dal, mode string, sim string, cp_version string, _type string) ([]string, error) {
-	max_version := cp_policy.QuantitateVersion(cp_version)
+func getGrbiList(dal *release.Dal, cp *release.CpRelease) ([]string, error) {
+	max_version := cp_policy.QuantitateVersion(cp.Version)
 	min_version := (max_version / 1000000) * 1000000
 	query := fmt.Sprintf("SELECT * FROM %s WHERE mode='%s' AND sim='%s' AND (version_scalar<=%d AND version_scalar>=%d ) AND flag=%d ORDER BY version_scalar DESC",
-		cp_constant.TABLE_CP, mode, sim, max_version, min_version, cp_constant.AVAILABLE_FLAG)
-	//	fmt.Println("cp query : " + query)
+		cp_constant.TABLE_CP, cp.Mode, cp.Sim, max_version, min_version, cp_constant.AVAILABLE_FLAG)
 	cps, err := release.FindCpReleaseList(dal, query)
 	if err != nil {
 		return nil, err
 	}
 
-	for _, cp := range cps {
-		grbi_list := make([]string, 0, 10)
-		query = fmt.Sprintf("SELECT * FROM %s where cp_id=%d AND flag=%d", cp_constant.TABLE_GRBI, cp.Id, cp_constant.AVAILABLE_FLAG)
+	grbi_list := make([]string, 0, 10)
+	for _, _cp := range cps {
+		query = fmt.Sprintf("SELECT * FROM %s where cp_id=%d AND flag=%d", cp_constant.TABLE_GRBI, _cp.Id, cp_constant.AVAILABLE_FLAG)
 		grbis, err := release.FindGrbiList(dal, query)
 		if err != nil {
 			return nil, err
@@ -198,62 +212,58 @@ func getGrbiList(dal *release.Dal, mode string, sim string, cp_version string, _
 		for _, grbi := range grbis {
 			grbi_list = append(grbi_list, grbi.RelPath)
 		}
-		return grbi_list, nil
+		break
 	}
 
-	return nil, nil
+	if len(grbi_list) == 0 {
+		return nil, fmt.Errorf("Cannot find the right Image.")
+	}
+
+	return grbi_list, nil
 }
 
-func getRficList(dal *release.Dal, mode string, sim string, cp_version string, _type string) ([]string, error) {
-	query := fmt.Sprintf("SELECT * FROM %s WHERE mode='%s' AND sim='%s' AND version='%s' AND flag=%d",
-		cp_constant.TABLE_CP, mode, sim, cp_version, cp_constant.AVAILABLE_FLAG)
-	cp, err := release.FindCpRelease(dal, query)
+func getRficList(dal *release.Dal, cp *release.CpRelease) ([]string, error) {
+	rfic_list := make([]string, 0, 10)
+	query := fmt.Sprintf("SELECT * FROM %s where cp_id=%d AND flag=%d", cp_constant.TABLE_RFIC, cp.Id, cp_constant.AVAILABLE_FLAG)
+	rfics, err := release.FindRficList(dal, query)
 	if err != nil {
 		return nil, err
 	}
 
-	arbi_list := make([]string, 0, 10)
-	query = fmt.Sprintf("SELECT * FROM %s where cp_id=%d AND flag=%d", cp_constant.TABLE_ARBI, cp.Id, cp_constant.AVAILABLE_FLAG)
-	arbis, err := release.FindArbiList(dal, query)
-	if err != nil {
-		return nil, err
+	if len(rfics) == 0 {
+		return nil, fmt.Errorf("Cannot find the right Image.")
 	}
 
-	if len(arbis) == 0 {
-		return nil, nil
+	for _, rfic := range rfics {
+		rfic_list = append(rfic_list, rfic.RelPath)
 	}
-
-	for _, arbi := range arbis {
-		rel_path := arbi.RelPath
-		if strings.Contains(rel_path, "/RFIC/") {
-			arbi_list = append(arbi_list, arbi.RelPath)
-		}
-	}
-	return arbi_list, nil
+	return rfic_list, nil
 }
 
-func getCpVersionList(dal *release.Dal, cp_info *CpInfo) ([]string, error) {
-	cp_list := make([]string, 0, 10)
+func getCpList(dal *release.Dal, cp_info *CpInfo) ([]*release.CpRelease, error) {
+	cp_list := make([]*release.CpRelease, 0, 10)
 	mode := cp_info.Mode
 	sim := cp_info.Sim
 	version := cp_info.Version
+	prefix := cp_info.Prefix
 	version_scalar := cp_policy.QuantitateVersion(version)
 
-	query := fmt.Sprintf("SELECT * FROM %s WHERE mode='%s' AND sim='%s' AND flag=%d AND version_scalar > %d ORDER BY version_scalar DESC",
-		cp_constant.TABLE_CP, mode, sim, cp_constant.AVAILABLE_FLAG, version_scalar)
-	list, err := doGetCpVersionList(dal, query)
+	query := fmt.Sprintf("SELECT * FROM %s WHERE mode='%s' AND prefix='%s' AND sim='%s' AND flag=%d AND version_scalar > %d ORDER BY version_scalar DESC",
+		cp_constant.TABLE_CP, mode, prefix, sim, cp_constant.AVAILABLE_FLAG, version_scalar)
+	list, err := doGetCpList(dal, query)
 	if err != nil {
 		return nil, err
 	}
 	cp_list = append(cp_list, list...)
 
-	query = fmt.Sprintf("SELECT * FROM %s WHERE mode='%s' AND sim='%s' AND flag=%d AND version_scalar < %d ORDER BY version_scalar DESC LIMIT 5",
-		cp_constant.TABLE_CP, mode, sim, cp_constant.AVAILABLE_FLAG, version_scalar)
-	list, err = doGetCpVersionList(dal, query)
+	query = fmt.Sprintf("SELECT * FROM %s WHERE mode='%s' AND prefix='%s' AND sim='%s' AND flag=%d AND version_scalar < %d ORDER BY version_scalar DESC LIMIT 5",
+		cp_constant.TABLE_CP, mode, prefix, sim, cp_constant.AVAILABLE_FLAG, version_scalar)
+	list, err = doGetCpList(dal, query)
 	if err != nil {
 		return nil, err
 	}
 	cp_list = append(cp_list, list...)
+
 	if len(cp_list) == 0 {
 		return nil, nil
 	}
@@ -261,18 +271,14 @@ func getCpVersionList(dal *release.Dal, cp_info *CpInfo) ([]string, error) {
 	return cp_list, nil
 }
 
-func doGetCpVersionList(dal *release.Dal, query string) ([]string, error) {
-	version_list := make([]string, 0, 10)
+func doGetCpList(dal *release.Dal, query string) ([]*release.CpRelease, error) {
 	cps, err := release.FindCpReleaseList(dal, query)
 	if err != nil {
 		return nil, err
 	}
-	for _, cp := range cps {
-		version_list = append(version_list, cp.Version)
-	}
 
-	if len(version_list) > 0 {
-		return version_list, nil
+	if len(cps) > 0 {
+		return cps, nil
 	} else {
 		return nil, nil
 	}

@@ -2,7 +2,6 @@ package constant
 
 import (
 	cp_constant "github.com/jsli/cp_release/constant"
-	"regexp"
 )
 
 const (
@@ -41,16 +40,24 @@ var (
 		{"GRBI", "TG", "SINGLE", "HLTD/HLTD_CP_2.42.000/xxxFlash.bin"},
 		{"RFIC", "TG", "SINGLE", "HLTD/HLTD_CP_2.42.000/xxxrfic.bin"},
 	}
+	TestDataLTER = [][]string{
+		{"ARBI", "LWG", "SINGLE", "LWG/HL_CP_2.30.000/HL_CP/Seagull/HL_LWG_DKB.bin"},
+		{"GRBI", "LWG", "SINGLE", "LWG/HL_CP_2.30.000/HL_MSA_2.30.000/HL_LWG_M09_B0_SKL_Flash.bin"},
+		{"RFIC", "LWG", "SINGLE", "LWG/HL_CP_2.30.000/RFIC/1920_FF/Skylark_LWG.bin"},
+		{"ARB2", "LTG", "SINGLE", "LTG/HL_CP_3.30.000/HL_CP/Seagull/HL_LTG_DL_DKB.bin"},
+		{"GRB2", "LTG", "SINGLE", "LTG/HL_CP_3.30.000/HL_MSA_3.30.000/HL_DL_M09_Y0_AI_SKL_Flash.bin"},
+		{"RFI2", "LTG", "SINGLE", "LTG/HL_CP_3.30.000/RFIC/1920_FF/Skylark_LTG.bin"},
+	}
 )
 
 const (
 	RADIO_DTIM_SIZE = 4096
 	RADIO_DTIM_NAME = "radio.dtim"
 
-	TYPE_SINGLE      = cp_constant.SIM_SINGLE
-	TYPE_DSDS        = cp_constant.SIM_DSDS
-	TYPE_SINGLE_RFIC = "SINGLE_RFIC"
-	TYPE_DSDS_RFIC   = "DSDS_RFIC"
+	TYPE_SINGLE      = cp_constant.SIM_SINGLE //2 image2
+	TYPE_DSDS        = cp_constant.SIM_DSDS   //4 images
+	TYPE_SINGLE_RFIC = "SINGLE_RFIC"          //3 images
+	TYPE_DSDS_RFIC   = "DSDS_RFIC"            //6 images
 
 	ID_ARBI = "ARBI"
 	ID_GRBI = "GRBI"
@@ -58,6 +65,10 @@ const (
 	ID_ARB2 = "ARB2"
 	ID_GRB2 = "GRB2"
 	ID_RFI2 = "RFI2"
+
+	KEY_ARBEL = "ARBEL"
+	KEY_MSA   = "MSA"
+	KEY_RFIC  = "RFIC"
 )
 
 const (
@@ -71,12 +82,8 @@ var (
 		ID_ARB2: TYPE_DSDS,
 		ID_GRB2: TYPE_DSDS,
 	}
-)
 
-const (
-	OTA_RELEASE_STATUS_DISABLED  = 0
-	OTA_RELEASE_STATUS_AVAILABLE = 1
-	OTA_RELEASE_STATUS_DROPPED   = 2
+	KEY_LIST = []string{KEY_ARBEL, KEY_MSA, KEY_RFIC}
 )
 
 const (
@@ -115,26 +122,5 @@ const (
 )
 
 const (
-	SINGLE_CP  = "single_cp.bin"
-	SINGLE_DSP = "single_dsp.bin"
-	DSDS_CP    = "dsds_cp.bin"
-	DSDS_DSP   = "dsds_dsp.bin"
-)
-
-const (
 	OTA_PKG_MAKE_CMD = "/home/manson/server/ota/new/radio/updatetool/updatemk"
 )
-
-var OFFSET_MAP = map[string]int64{
-	SINGLE_CP: 0, SINGLE_DSP: 8388608,
-	DSDS_CP: 10485760, DSDS_DSP: 18874368,
-}
-
-var CP_VERSION_REX = regexp.MustCompile(`^\d+\.\d+\.\d+$`)
-var MODEL_2_CPPREFIX = map[string]string{"pxa986ff_def": "KL", "pxa988ff_def": "EM", "pxa1088ff_def": "HL_WB", "pxa1t88ff_def": "HL_TD"}
-var COPY_FILE_LIST []string = []string{"SYSTEM/build.prop", "RECOVERY/RAMDISK/etc/recovery.fstab"}
-var COPY_DIR_LIST []string = []string{"OTA/", "META/"}
-var UPLOAD_FILE_LIST = []string{"cp", "dsp"}
-
-var TYPE_LIST = []string{"single", "dsds"}
-var MODEL_LIST = []string{"pxa1088ff_def", "pxa1t88ff_def"}
