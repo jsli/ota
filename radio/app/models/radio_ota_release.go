@@ -7,27 +7,27 @@ import (
 )
 
 type RadioOtaRelease struct {
-	Id      int64
-	Mode    string
-	Version string
-	Md5     string
-	Size    int64
-	Flag    int
+	Id          int64
+	FingerPrint string
+	Md5         string
+	Size        int64
+	Flag        int
+	Detail      string
 }
 
 func (ror RadioOtaRelease) String() string {
-	return fmt.Sprintf("RadioRelease(Id=%d, Mode=%s, Version=%s, Md5=%s, Size=%d, Flag=%d)",
-		ror.Id, ror.Mode, ror.Version, ror.Md5, ror.Size, ror.Flag)
+	return fmt.Sprintf("RadioRelease(Id=%d, FingerPrint=%s, Md5=%s, Size=%d, Flag=%d, detail=%s)",
+		ror.Id, ror.FingerPrint, ror.Md5, ror.Size, ror.Flag, ror.Detail)
 }
 
 func (ror *RadioOtaRelease) Save(dal *Dal) (int64, error) {
-	insert_sql := fmt.Sprintf("INSERT %s SET mode=?, version=?, md5=?, size=?, flag=?", constant.TABLE_RADIO_OTA_RELEASE)
+	insert_sql := fmt.Sprintf("INSERT %s SET fingerprint=?, md5=?, size=?, flag=?, detail=?", constant.TABLE_RADIO_OTA_RELEASE)
 	stmt, eror := dal.Link.Prepare(insert_sql)
 
 	if eror != nil {
 		return -1, eror
 	}
-	res, eror := stmt.Exec(ror.Mode, ror.Version, ror.Md5, ror.Size, ror.Flag)
+	res, eror := stmt.Exec(ror.FingerPrint, ror.Md5, ror.Size, ror.Flag, ror.Detail)
 	if eror != nil {
 		return -1, eror
 	}
@@ -39,7 +39,7 @@ func (ror *RadioOtaRelease) Save(dal *Dal) (int64, error) {
 func FindRadioOtaRelease(dal *Dal, query string) (*RadioOtaRelease, error) {
 	row := dal.Link.QueryRow(query)
 	ror := RadioOtaRelease{}
-	err := row.Scan(&ror.Id, &ror.Mode, &ror.Version, &ror.Md5, &ror.Size, &ror.Flag)
+	err := row.Scan(&ror.Id, &ror.FingerPrint, &ror.Md5, &ror.Size, &ror.Flag, &ror.Detail)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil

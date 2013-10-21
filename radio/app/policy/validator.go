@@ -1,13 +1,16 @@
 package policy
 
 import (
+	"encoding/json"
 	"fmt"
 	cp_constant "github.com/jsli/cp_release/constant"
 	cp_policy "github.com/jsli/cp_release/policy"
 	"github.com/jsli/gtbox/file"
 	"github.com/jsli/gtbox/ota"
 	ota_constant "github.com/jsli/ota/radio/app/constant"
+	"github.com/jsli/ota/radio/app/models"
 	"github.com/robfig/revel"
+	"net/url"
 	"os"
 	"strings"
 )
@@ -56,21 +59,41 @@ type CpInfo struct {
 	ImageMap map[string]*CpImage
 }
 
-type ParsedParams struct {
-	DtimPath string
-	Type     string
-	HasRFIC  bool
-	CpMap    map[string]*CpInfo
+type DtimInfo struct {
+	HasRFIC bool
+	CpMap   map[string]*CpInfo
 }
 
 type Validator interface {
-	Validate(params *revel.Params) (ParsedParams, error)
+	ValidateAndParseRadioDtim(params *revel.Params, root_path string, is_delete bool) (DtimInfo, error)
+	ValidateUpdateRequest(params *revel.Params) (*models.UpdateRequest, string, error)
 }
 
 type RadioValidator struct {
 }
 
-func (v *RadioValidator) PostValidate(params *revel.Params) (*ParsedParams, error) {
+func (v *RadioValidator) ValidateUpdateRequest(params *revel.Params) (*models.UpdateRequest, string, error) {
+	var request_str string = ""
+	params.Bind(&request_str, "request")
+	if request_str == "" {
+		return nil, request_str, fmt.Errorf("Illegal param [request]!")
+	}
+
+	request_str, err := url.QueryUnescape(request_str)
+	if err != nil {
+		return nil, request_str, fmt.Errorf("Illegal format [request] : %s", err)
+	}
+
+	update_request := &models.UpdateRequest{}
+	err = json.Unmarshal([]byte(request_str), update_request)
+	if err != nil {
+		return nil, request_str, fmt.Errorf("Illegal format [request] : %s", err)
+	}
+
+	return update_request, request_str, nil
+}
+
+func (v *RadioValidator) ValidateAndParseRadioDtim(params *revel.Params, root_path string, is_delete bool) (*DtimInfo, error) {
 	fh_arr, ok := params.Files[ota_constant.RADIO_DTIM_NAME]
 	if !ok || len(fh_arr) <= 0 {
 		return nil, fmt.Errorf("Post request lost file : %s", ota_constant.RADIO_DTIM_NAME)
@@ -81,13 +104,17 @@ func (v *RadioValidator) PostValidate(params *revel.Params) (*ParsedParams, erro
 		return nil, err
 	}
 	defer input.Close()
-	rand_file_path := fmt.Sprintf("%s%s", ota_constant.DTIM_UPLOAD_ROOT, randFileName())
-	err = file.WriteReader2File(input, rand_file_path)
+	dtim_path := fmt.Sprintf("%s%s", root_path, ota_constant.RADIO_DTIM_NAME)
+	err = file.WriteReader2File(input, dtim_path)
 	if err != nil {
 		return nil, err
 	}
+	//It's useless after parsing it in query requst, delete it refer to 'is_delete'
+	if is_delete {
+		defer file.DeleteFile(dtim_path)
+	}
 
-	fi, err := os.Stat(rand_file_path)
+	fi, err := os.Stat(dtim_path)
 	if err != nil {
 		return nil, err
 	}
@@ -96,8 +123,8 @@ func (v *RadioValidator) PostValidate(params *revel.Params) (*ParsedParams, erro
 			ota_constant.RADIO_DTIM_NAME, fi.Size(), ota_constant.RADIO_DTIM_SIZE)
 	}
 
-	//	images, err := ota.ParseDtim(rand_file_path)
-	images, err := ota_constant.TestDataLTER, nil
+	images, err := ota.ParseDtim(dtim_path)
+	//	images, err := ota_constant.TestDataLTER, nil
 	if err != nil {
 		return nil, err
 	}
@@ -110,31 +137,12 @@ func (v *RadioValidator) PostValidate(params *revel.Params) (*ParsedParams, erro
 		}
 	}
 
-	parsedParams := &ParsedParams{}
-	parsedParams.DtimPath = rand_file_path
-
 	count := len(images)
-	switch count {
-	case 2:
-		parsedParams.HasRFIC = false
-		parsedParams.Type = ota_constant.TYPE_SINGLE
-	case 3:
-		parsedParams.HasRFIC = true
-		parsedParams.Type = ota_constant.TYPE_SINGLE_RFIC
-	case 4:
-		parsedParams.HasRFIC = false
-		parsedParams.Type = ota_constant.TYPE_DSDS
-	case 6:
-		parsedParams.HasRFIC = true
-		parsedParams.Type = ota_constant.TYPE_DSDS_RFIC
-	default:
-		return nil, fmt.Errorf("Illegal cp information from %s, image count must be 2 or 4, NOT %d", rand_file_path, count)
-	}
-
+	dtim_info := &DtimInfo{}
 	cp_image_list := make([]*CpImage, count)
 	for index, image := range images {
 		if len(image) != 4 {
-			return nil, fmt.Errorf("Illegal image information from %s, image's attr count must be 4, NOT %d", rand_file_path, len(image))
+			return nil, fmt.Errorf("Illegal image information from %s, image's attr count must be 4, NOT %d", dtim_path, len(image))
 		}
 
 		cp_image := &CpImage{}
@@ -147,9 +155,9 @@ func (v *RadioValidator) PostValidate(params *revel.Params) (*ParsedParams, erro
 		cp_image_list[index] = cp_image
 	}
 
-	parsedParams.CpMap = make(map[string]*CpInfo)
-	switch parsedParams.Type {
-	case ota_constant.TYPE_DSDS_RFIC:
+	dtim_info.CpMap = make(map[string]*CpInfo)
+	switch count {
+	case 6:
 		cp_info := &CpInfo{}
 		cp_info.ImageMap = make(map[string]*CpImage)
 		cp_info.Mode = cp_image_list[3].Mode
@@ -160,9 +168,10 @@ func (v *RadioValidator) PostValidate(params *revel.Params) (*ParsedParams, erro
 		cp_info.ImageMap[ota_constant.ID_ARB2] = cp_image_list[3]
 		cp_info.ImageMap[ota_constant.ID_GRB2] = cp_image_list[4]
 		cp_info.ImageMap[ota_constant.ID_RFI2] = cp_image_list[5]
-		parsedParams.CpMap[ota_constant.TYPE_DSDS_RFIC] = cp_info
+		dtim_info.CpMap[cp_info.Mode] = cp_info
 		fallthrough
-	case ota_constant.TYPE_SINGLE_RFIC:
+	case 3:
+		dtim_info.HasRFIC = true
 		cp_info := &CpInfo{}
 		cp_info.ImageMap = make(map[string]*CpImage)
 		cp_info.Mode = cp_image_list[0].Mode
@@ -173,8 +182,8 @@ func (v *RadioValidator) PostValidate(params *revel.Params) (*ParsedParams, erro
 		cp_info.ImageMap[ota_constant.ID_ARBI] = cp_image_list[0]
 		cp_info.ImageMap[ota_constant.ID_GRBI] = cp_image_list[1]
 		cp_info.ImageMap[ota_constant.ID_RFIC] = cp_image_list[2]
-		parsedParams.CpMap[ota_constant.TYPE_SINGLE_RFIC] = cp_info
-	case ota_constant.TYPE_DSDS:
+		dtim_info.CpMap[cp_info.Mode] = cp_info
+	case 4:
 		cp_info := &CpInfo{}
 		cp_info.ImageMap = make(map[string]*CpImage)
 		cp_info.Mode = cp_image_list[2].Mode
@@ -184,9 +193,10 @@ func (v *RadioValidator) PostValidate(params *revel.Params) (*ParsedParams, erro
 		cp_info.Prefix = cp_image_list[2].Prefix
 		cp_info.ImageMap[ota_constant.ID_ARB2] = cp_image_list[2]
 		cp_info.ImageMap[ota_constant.ID_GRB2] = cp_image_list[3]
-		parsedParams.CpMap[ota_constant.TYPE_DSDS] = cp_info
+		dtim_info.CpMap[cp_info.Mode] = cp_info
 		fallthrough
-	case ota_constant.TYPE_SINGLE:
+	case 2:
+		dtim_info.HasRFIC = false
 		cp_info := &CpInfo{}
 		cp_info.ImageMap = make(map[string]*CpImage)
 		cp_info.Mode = cp_image_list[0].Mode
@@ -196,9 +206,11 @@ func (v *RadioValidator) PostValidate(params *revel.Params) (*ParsedParams, erro
 		cp_info.Prefix = cp_image_list[0].Prefix
 		cp_info.ImageMap[ota_constant.ID_ARBI] = cp_image_list[0]
 		cp_info.ImageMap[ota_constant.ID_GRBI] = cp_image_list[1]
-		parsedParams.CpMap[ota_constant.TYPE_SINGLE] = cp_info
+		dtim_info.CpMap[cp_info.Mode] = cp_info
+	default:
+		return nil, fmt.Errorf("Illegal cp information from %s, image count must be 2 or 4, NOT %d", dtim_path, count)
 	}
-	return parsedParams, nil
+	return dtim_info, nil
 }
 
 func ValidateNetwork(network string) error {
