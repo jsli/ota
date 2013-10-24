@@ -1,6 +1,10 @@
 package app
 
-import "github.com/robfig/revel"
+import (
+	"github.com/jsli/ota/radio/app/ota_job"
+	"github.com/robfig/revel"
+	"github.com/robfig/revel/modules/jobs/app/jobs"
+)
 
 func init() {
 	// Filters is the default set of global filters.
@@ -16,4 +20,9 @@ func init() {
 		revel.InterceptorFilter,       // Run interceptors around the action.
 		revel.ActionInvoker,           // Invoke the action.
 	}
+
+	revel.OnAppStart(func() {
+		job := ota_job.ReleaseCreationJob{}
+		jobs.Schedule("@every 15s", &job)
+	})
 }

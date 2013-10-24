@@ -2,11 +2,7 @@ package controllers
 
 import (
 	"fmt"
-	_ "github.com/go-sql-driver/mysql"
 	"github.com/jsli/cp_release/release"
-	"github.com/jsli/gtbox/file"
-	"github.com/jsli/gtbox/ota"
-	"github.com/jsli/gtbox/pathutil"
 	ota_constant "github.com/jsli/ota/radio/app/constant"
 	"github.com/jsli/ota/radio/app/models"
 	"github.com/jsli/ota/radio/app/policy"
@@ -19,30 +15,30 @@ type Radio struct {
 }
 
 func (c Radio) Index() revel.Result {
-	policy.GenerateTestUpdateRequest()
-	return c.Render()
+	_, j := policy.GenerateTestUpdateRequest()
+	return c.RenderJson(j)
 }
 
 func (c Radio) OtaCreate() revel.Result {
-	root := fmt.Sprintf("%s%s/", ota_constant.TMP_FILE_ROOT, ota.GenerateRandFileName())
-	pathutil.MkDir(root)
-	//	defer file.DeleteDir(root)
-
+	revel.INFO.Println("OtaCreate request: ", c.Request)
 	validator := &policy.RadioValidator{}
-	dtim_info, err := validator.ValidateAndParseRadioDtim(c.Params, root, false)
+	dtim_info, err := validator.ValidateAndParseRadioDtim(c.Params)
 	if err != nil {
+		revel.ERROR.Println("http.StatusBadRequest: ", err)
 		c.Response.Status = http.StatusBadRequest
 		return c.RenderJson(nil)
 	}
 
 	update_request, request_json, err := validator.ValidateUpdateRequest(c.Params)
 	if err != nil {
+		revel.ERROR.Println("http.StatusBadRequest: ", err)
 		c.Response.Status = http.StatusBadRequest
 		return c.RenderJson(nil)
 	}
 
 	dal, err := models.NewDal()
 	if err != nil {
+		revel.ERROR.Println("http.StatusInternalServerError: ", err)
 		c.Response.Status = http.StatusInternalServerError
 		return c.RenderJson(nil)
 	}
@@ -55,48 +51,53 @@ func (c Radio) OtaCreate() revel.Result {
 	result := models.NewRadioOtaReleaseResult()
 	radio, err := policy.ProvideRadioRelease(dal, dtim_info, result, fp)
 	if err != nil {
+		revel.ERROR.Println("http.StatusInternalServerError: ", err)
 		c.Response.Status = http.StatusInternalServerError
 		result.Extra[ota_constant.KEY_ERROR] = err
 		return c.RenderJson(result)
 	}
 
 	if radio == nil {
-		radio, err = policy.GenerateOtaPackage(dal, dtim_info, update_request, sorted_image_list, request_json, root)
-		if err != nil {
-			c.Response.Status = http.StatusInternalServerError
-			result.Extra[ota_constant.KEY_ERROR] = err
-			return c.RenderJson(result)
-		}
-	}
+		task := &models.ReleaseCreationTask{}
+		task.Flag = ota_constant.FLAG_INIT
+		task.UpdateRequest = request_json
+		task.Data = dtim_info.BinaryData
+		task.FingerPrint = fp
 
-	if radio != nil {
+		id, err := task.Save(dal)
+		if id < 0 || err != nil {
+			revel.ERROR.Println("http.StatusInternalServerError: ", err)
+			result.Extra[ota_constant.KEY_ERROR] = "Duplicated creation task"
+		} else {
+			revel.INFO.Println("OtaCreate request, create task: ", task.UpdateRequest)
+			result.Extra[ota_constant.KEY_ERROR] = "Create creation task, try later"
+		}
+
+		c.Response.Status = http.StatusNotFound
+		return c.RenderJson(result)
+	} else {
+		revel.INFO.Println("OtaCreate, find release: ", radio)
 		result.Data[ota_constant.KEY_URL] = fmt.Sprintf("http://%s/static/%s/%s", c.Request.Host, radio.FingerPrint, ota_constant.RADIO_OTA_PACKAGE_NAME)
 		result.Data[ota_constant.KEY_MD5] = radio.Md5
 		result.Data[ota_constant.KEY_SIZE] = radio.Size
 		result.Extra[ota_constant.KEY_ERROR] = nil
-	} else {
-		c.Response.Status = http.StatusNotFound
-		result.Extra[ota_constant.KEY_ERROR] = nil
-		return c.RenderJson(nil)
 	}
 
 	return c.RenderJson(result)
 }
 
 func (c Radio) Query() revel.Result {
-	root := fmt.Sprintf("%s%s/", ota_constant.TMP_FILE_ROOT, ota.GenerateRandFileName())
-	pathutil.MkDir(root)
-	defer file.DeleteDir(root)
-
+	revel.INFO.Println("Query request: ", c.Request)
 	validator := &policy.RadioValidator{}
-	dtim_info, err := validator.ValidateAndParseRadioDtim(c.Params, root, true)
+	dtim_info, err := validator.ValidateAndParseRadioDtim(c.Params)
 	if err != nil {
-		fmt.Println(err)
+		revel.ERROR.Println("http.StatusBadRequest: ", err)
 		c.Response.Status = http.StatusBadRequest
 		return c.RenderJson(nil)
 	}
 	dal, err := release.NewDal()
 	if err != nil {
+		revel.ERROR.Println("http.StatusInternalServerError: ", err)
 		c.Response.Status = http.StatusInternalServerError
 		return c.RenderJson(nil)
 	}
@@ -105,6 +106,7 @@ func (c Radio) Query() revel.Result {
 	result := models.NewQueryResult()
 	err = policy.ProvideQueryData(dal, dtim_info, result)
 	if err != nil {
+		revel.ERROR.Println("http.StatusInternalServerError: ", err)
 		c.Response.Status = http.StatusInternalServerError
 		result.Extra[ota_constant.KEY_ERROR] = err
 		return c.RenderJson(result)
@@ -117,5 +119,6 @@ func (c Radio) Query() revel.Result {
 		}
 	}
 
+	revel.INFO.Println("Query request, result: ", result)
 	return c.RenderJson(result)
 }
