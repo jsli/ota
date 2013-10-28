@@ -11,7 +11,7 @@ const (
 )
 
 type Dal struct {
-	Link *sql.DB
+	DB *sql.DB
 }
 
 func NewDal() (*Dal, error) {
@@ -29,5 +29,5 @@ func checkErr(err error) {
 }
 
 func (dal *Dal) Close() {
-	dal.Link.Close()
+	dal.DB.Close()
 }

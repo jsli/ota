@@ -2,7 +2,7 @@ package ota_job
 
 import (
 	"fmt"
-	"github.com/jsli/gtbox/file"
+	//	"github.com/jsli/gtbox/file"
 	"github.com/jsli/gtbox/pathutil"
 	ota_constant "github.com/jsli/ota/radio/app/constant"
 	"github.com/jsli/ota/radio/app/models"
@@ -31,8 +31,8 @@ func (rcj *ReleaseCreationJob) Run() {
 	if task != nil {
 		root_path := fmt.Sprintf("%s%s/", ota_constant.TMP_FILE_ROOT, policy.GenerateRandFileName())
 		pathutil.MkDir(root_path)
-		defer file.DeleteDir(root_path)
-		revel.INFO.Println("Create job : processing task : ", task, " ----- tmp dir : ", root_path)
+		//		defer file.DeleteDir(root_path)
+		revel.INFO.Println("Create job : processing task : ", task.UpdateRequest, " ----- tmp dir : ", root_path)
 
 		task.Flag = ota_constant.FLAG_CREATING
 		task.Update(dal)
@@ -41,7 +41,9 @@ func (rcj *ReleaseCreationJob) Run() {
 		if err != nil {
 			task.Flag = ota_constant.FLAG_CREATE_FAILED
 			task.Update(dal)
-			revel.INFO.Println("Create job : processing task failed: ", task)
+			revel.ERROR.Println("Create job : processing task failed: ", err)
+			revel.INFO.Println("Create job : processing task failed: ", task.Id)
+			return
 		}
 
 		task.ReleaseId = release.Id

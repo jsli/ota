@@ -9,44 +9,57 @@ import (
 	"github.com/jsli/gtbox/sys"
 	ota_constant "github.com/jsli/ota/radio/app/constant"
 	"github.com/jsli/ota/radio/app/models"
+	"github.com/robfig/revel"
 	"math/rand"
 	"strings"
 	"time"
 )
 
-const (
-	DEBUG = false
-)
-
 func GenerateOtaPackage(dal *models.Dal, task *models.ReleaseCreationTask, root_path string) (*models.RadioOtaRelease, error) {
 	//0.parse request from json string which stored in DB.
 	update_request, err := ParseRequest(task.UpdateRequest)
+	if err != nil {
+		return nil, err
+	}
 
 	//1.create all paths
 	zip_path := fmt.Sprintf("%s%s", root_path, ota_constant.ZIP_DIR_NAME)
 	pathutil.MkDir(zip_path)
-	template_path := fmt.Sprintf("%s%s", ota_constant.TEMPLATE_ROOT, "HELAN")
+	template_path := ota_constant.MODEL_TO_TEMPLATE[update_request.Device.Model]
 	update_pkg_path := fmt.Sprintf("%s%s", root_path, ota_constant.UPDATE_PKG_NAME)
 	radio_ota_path := fmt.Sprintf("%s%s", root_path, ota_constant.RADIO_OTA_PACKAGE_NAME)
-
-	if DEBUG {
-		fmt.Println(zip_path)
-		fmt.Println(template_path)
-		fmt.Println(update_pkg_path)
-		fmt.Println(radio_ota_path)
-	}
+	radio_dtim_path := fmt.Sprintf("%s%s", root_path, ota_constant.RADIO_DTIM_NAME)
+	radio_image_path := fmt.Sprintf("%s%s", root_path, ota_constant.RADIO_IMAGE_NAME)
 
 	//2.copy template files
 	err = file.CopyDir(template_path, zip_path)
-
-	/*------------temp : copy radio.img ---------------*/
-	_, err = file.CopyFile("/home/manson/desktop/radio/radio.img", zip_path+"radio.img")
+	if err != nil {
+		return nil, err
+	}
 
 	//3.create Radio.dtim, Radio.img
-	image_list := GenerateImageList(update_request)
+	err = file.WriteBytes2File(task.Data, radio_dtim_path)
+	if err != nil {
+		return nil, err
+	}
+	image_list := []string{
+		"/home/manson/desktop/HLLTE/HLLTE_CP_2.29.000/Seagull/HL_LTG.bin",
+		"/home/manson/desktop/HLLTE/HLLTE_CP_2.29.000/TTD_WK_NL_MSA_2.29.000/HL_DL_M09_Y0_AI_SKL_Flash.bin",
+	}
+		
+	err = generateRadioImage(radio_dtim_path, radio_image_path, image_list)
+	if err != nil {
+		return nil, err
+	}
+	_, err = file.CopyFile(radio_image_path, fmt.Sprintf("%s%s", zip_path, ota_constant.RADIO_IMAGE_NAME))
+	
+	image_list = GenerateImageList(update_request)
 
 	//	4. archive all files
 	err = archive.ArchiveZipFile(zip_path, update_pkg_path)
+	if err != nil {
+		return nil, err
+	}
 
 	//5.generate update.zip (updatetool + update_pkg.zip)
 	params := make([]string, 5)
@@ -55,7 +68,10 @@ func GenerateOtaPackage(dal *models.Dal, task *models.ReleaseCreationTask, root_
 	params[2] = ota_constant.OTA_CMD_PARAM_OEM_PREFIX
 	params[3] = ota_constant.OTA_CMD_PARAM_OUTPUT_PREFIX + radio_ota_path
 	params[4] = ota_constant.OTA_CMD_PARAM_INPUT_PREFIX + update_pkg_path
-	generateOtaPackage(ota_constant.OTA_MAKE_CMD, params)
+	err = generateOtaPackage(params)
+	if err != nil {
+		return nil, err
+	}
 
 	//6.insert db
 	release := &models.RadioOtaRelease{}
@@ -74,13 +90,17 @@ func GenerateOtaPackage(dal *models.Dal, task *models.ReleaseCreationTask, root_
 	if id < 0 || err != nil {
 		return nil, err
 	}
+	release.Id = id
 
 	//	7.copy final file to public directory, checksum
 	final_dir := fmt.Sprintf("%s%s/", ota_constant.RADIO_OTA_RELEASE_ROOT, release.FingerPrint)
 	pathutil.MkDir(final_dir)
 	final_path := fmt.Sprintf("%s%s", final_dir, ota_constant.RADIO_OTA_PACKAGE_NAME)
 	checksum_path := fmt.Sprintf("%s%s", final_dir, ota_constant.CHECKSUM_TXT_NAME)
-	file.CopyFile(radio_ota_path, final_path)
+	_, err = file.CopyFile(radio_ota_path, final_path)
+	if err != nil {
+		return nil, err
+	}
 	RecordMd5(final_path, checksum_path)
 
 	return release, nil
@@ -115,25 +135,23 @@ func GenerateRandFileName() string {
 	return fmt.Sprintf("%d", r.Int63())
 }
 
-func generateRadioImage(cmd string, image_list []string) error {
-	fmt.Printf("exec : %s, params = %s", cmd, image_list)
-	res, output, err := sys.ExecCmd(cmd, image_list)
-	if DEBUG {
-		fmt.Println(output)
-	}
+func generateOtaPackage(params []string) error {
+	res, output, err := sys.ExecCmd(ota_constant.OTA_MAKE_CMD, params)
+	revel.INFO.Println("generate ota package: \n", output)
 	if !res || err != nil {
-		return fmt.Errorf("%s failed: %s\n\tdetail message: %s\n", cmd, err, output)
+		return fmt.Errorf("%s failed: %s\n\tdetail message: %s\n", ota_constant.OTA_MAKE_CMD, err, output)
 	}
 	return nil
 }
 
-func generateOtaPackage(cmd string, params []string) error {
-	res, output, err := sys.ExecCmd(cmd, params)
-	if DEBUG {
-		fmt.Println(output)
-	}
+func generateRadioImage(radio_dtim_path string, radio_image_path string, image_list []string) error {
+	params := make([]string, 0, 5)
+	params = append(params, radio_dtim_path)
+	params = append(params, radio_image_path)
+	params = append(params, image_list...)
+	res, output, err := sys.ExecCmd(ota_constant.RESIGN_DTIM_CMD, params)
 	if !res || err != nil {
-		return fmt.Errorf("%s failed: %s\n\tdetail message: %s\n", cmd, err, output)
+		return fmt.Errorf("%s failed: %s\n\tdetail message: %s\n", ota_constant.RESIGN_DTIM_CMD, err, output)
 	}
 	return nil
 }

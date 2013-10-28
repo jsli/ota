@@ -6,7 +6,6 @@ import ()
 const (
 	OTA_ROOT               = "/home/manson/OTA/"
 	TMP_FILE_ROOT          = OTA_ROOT + "tmp/"
-	DTIM_UPLOAD_ROOT       = TMP_FILE_ROOT + "dtim_upload/"
 	SCRIPTS_ROOT           = OTA_ROOT + "scripts/"
 	FILTER_ROOT            = SCRIPTS_ROOT + "filter/"
 	TEMPLATE_ROOT          = OTA_ROOT + "template/"
@@ -18,14 +17,14 @@ const (
 	UPDATE_PKG_NAME        = "update_pkg.zip"
 	RADIO_OTA_PACKAGE_NAME = "update.zip"
 	RADIO_DTIM_NAME        = "Radio.dtim"
-	RADIO_IMAGE_NAME       = "Radio.img"
+	RADIO_IMAGE_NAME       = "radio.img"
 	CHECKSUM_TXT_NAME      = "checksum.txt"
 
 	UPDATE_CMD_NAME  = "updatemk"
 	RESIGN_DTIM_NAME = "dtim/resigndtim.rb"
 
-	TEMPLATE_HELAN    = "HELAN"
-	TEMPLATE_HELANLTE = "HELANLTE"
+	TEMPLATE_HELAN_ROOT    = TEMPLATE_ROOT + "HELAN/"
+	TEMPLATE_HELANLTE_ROOT = TEMPLATE_ROOT + "HELANLTE/"
 )
 
 //command
@@ -87,9 +86,9 @@ const (
 
 var (
 	MODEL_TO_TEMPLATE = map[string]string{
-		MODEL_1088: TEMPLATE_HELAN,
-		MODEL_1T88: TEMPLATE_HELAN,
-		MODEL_1L88: TEMPLATE_HELANLTE,
+		MODEL_1088: TEMPLATE_HELAN_ROOT,
+		MODEL_1T88: TEMPLATE_HELAN_ROOT,
+		MODEL_1L88: TEMPLATE_HELANLTE_ROOT,
 	}
 	MODEL_TO_PLATFORM = map[string]string{
 		MODEL_1088: PLATFORM_JB_4_2,

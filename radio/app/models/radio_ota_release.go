@@ -22,7 +22,7 @@ func (ror RadioOtaRelease) String() string {
 
 func (ror *RadioOtaRelease) Save(dal *Dal) (int64, error) {
 	insert_sql := fmt.Sprintf("INSERT %s SET fingerprint=?, md5=?, size=?, flag=?, detail=?", ota_constant.TABLE_RADIO_OTA_RELEASE)
-	stmt, eror := dal.Link.Prepare(insert_sql)
+	stmt, eror := dal.DB.Prepare(insert_sql)
 
 	if eror != nil {
 		return -1, eror
@@ -37,7 +37,7 @@ func (ror *RadioOtaRelease) Save(dal *Dal) (int64, error) {
 }
 
 func FindRadioOtaRelease(dal *Dal, query string) (*RadioOtaRelease, error) {
-	row := dal.Link.QueryRow(query)
+	row := dal.DB.QueryRow(query)
 	ror := RadioOtaRelease{}
 	err := row.Scan(&ror.Id, &ror.FingerPrint, &ror.Md5, &ror.Size, &ror.Flag, &ror.Detail)
 	if err != nil {
@@ -66,7 +66,7 @@ func (rct ReleaseCreationTask) String() string {
 
 func (rct *ReleaseCreationTask) Save(dal *Dal) (int64, error) {
 	insert_sql := fmt.Sprintf("INSERT %s SET release_id=?, flag=?, update_request=?, finger_print=?, binary_data=?", ota_constant.TABLE_RELEASE_CREATION_TASK)
-	stmt, eror := dal.Link.Prepare(insert_sql)
+	stmt, eror := dal.DB.Prepare(insert_sql)
 
 	if eror != nil {
 		return -1, eror
@@ -82,7 +82,7 @@ func (rct *ReleaseCreationTask) Save(dal *Dal) (int64, error) {
 
 func (rct *ReleaseCreationTask) Update(dal *Dal) (int64, error) {
 	update_sql := fmt.Sprintf("UPDATE %s SET release_id=?, flag=?, update_request=?, finger_print=?, binary_data=?", ota_constant.TABLE_RELEASE_CREATION_TASK)
-	stmt, eror := dal.Link.Prepare(update_sql)
+	stmt, eror := dal.DB.Prepare(update_sql)
 
 	if eror != nil {
 		return -1, eror
@@ -103,7 +103,7 @@ func PopOneCreationTask(dal *Dal) (*ReleaseCreationTask, error) {
 }
 
 func FindReleaseCreationTask(dal *Dal, query string) (*ReleaseCreationTask, error) {
-	row := dal.Link.QueryRow(query)
+	row := dal.DB.QueryRow(query)
 	rct := ReleaseCreationTask{}
 	err := row.Scan(&rct.Id, &rct.ReleaseId, &rct.Flag, &rct.UpdateRequest, &rct.FingerPrint, &rct.Data)
 	if err != nil {
