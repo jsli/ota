@@ -10,7 +10,7 @@ const (
 	FILTER_ROOT            = SCRIPTS_ROOT + "filter/"
 	TEMPLATE_ROOT          = OTA_ROOT + "template/"
 	RELEASE_ROOT           = OTA_ROOT + "release/"
-	RADIO_OTA_RELEASE_ROOT = RELEASE_ROOT + "RADIO_OTA/"
+	RADIO_OTA_RELEASE_ROOT = RELEASE_ROOT + "radio_ota/"
 	TOOLS_ROOT             = OTA_ROOT + "updatetool/"
 
 	ZIP_DIR_NAME           = "zip/"
