@@ -39,6 +39,10 @@ func (ror *RadioOtaRelease) Save(dal *Dal) (int64, error) {
 	return id, eror
 }
 
+func (ror *RadioOtaRelease) Delete(dal *Dal) (int64, error) {
+	return DeleteRadioReleaseByFp(dal, ror.FingerPrint)
+}
+
 func FindRadioOtaRelease(dal *Dal, query string) (*RadioOtaRelease, error) {
 	row := dal.DB.QueryRow(query)
 	ror := RadioOtaRelease{}
@@ -51,6 +55,26 @@ func FindRadioOtaRelease(dal *Dal, query string) (*RadioOtaRelease, error) {
 	}
 
 	return &ror, nil
+}
+
+func DeleteRadioReleaseByFp(dal *Dal, fingerprint string) (int64, error) {
+	delete_sql := fmt.Sprintf("DELETE FROM %s where fingerprint='%s'", ota_constant.TABLE_RADIO_OTA_RELEASE, fingerprint)
+	return DeleteRadioRelease(dal, delete_sql)
+}
+
+func DeleteRadioRelease(dal *Dal, delete_sql string) (int64, error) {
+	stmt, err := dal.DB.Prepare(delete_sql)
+
+	if err != nil {
+		return -1, err
+	}
+	res, err := stmt.Exec()
+	if err != nil {
+		return -1, err
+	}
+
+	id, err := res.LastInsertId()
+	return id, err
 }
 
 type ReleaseCreationTask struct {

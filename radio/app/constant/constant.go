@@ -1,6 +1,8 @@
 package constant
 
-import ()
+import (
+	cp_constant "github.com/jsli/cp_release/constant"
+)
 
 //path
 const (
@@ -60,12 +62,16 @@ const (
 	KEY_CREATED_TIME     = "created_time"
 	KEY_ERROR            = "error"
 
+	TAG_1088   = "1088"
+	TAG_1T88   = "1T88"
+	TAG_1L88   = "1L88"
+	MODEL_1088 = "PXA1088"
+	MODEL_1920 = "PXA1L88"
+
+	TAG_JB_4_2      = "4.2"
+	TAG_JB_4_3      = "4.3"
 	PLATFORM_JB_4_2 = "jb-4.2"
 	PLATFORM_JB_4_3 = "jb-4.3"
-
-	MODEL_1088 = "pxa1088ff_def"
-	MODEL_1T88 = "pxa1t88ff_def"
-	MODEL_1L88 = "pxa1l88ff_def"
 
 	BOARD_FF  = "FF"
 	BOARD_DKB = "DKB"
@@ -92,16 +98,12 @@ const (
 var (
 	MODEL_TO_TEMPLATE = map[string]string{
 		MODEL_1088: TEMPLATE_HELAN_ROOT,
-		MODEL_1T88: TEMPLATE_HELAN_ROOT,
-		MODEL_1L88: TEMPLATE_HELANLTE_ROOT,
-	}
-	MODEL_TO_PLATFORM = map[string]string{
-		MODEL_1088: PLATFORM_JB_4_2,
-		MODEL_1T88: PLATFORM_JB_4_2,
-		MODEL_1L88: PLATFORM_JB_4_3,
+		MODEL_1920: TEMPLATE_HELANLTE_ROOT,
 	}
 
+	MODE_TO_ROOT_PATH = cp_constant.MODE_TO_ROOT_PATH
+
 	KEY_LIST      = []string{KEY_ARBEL, KEY_MSA, KEY_RFIC}
-	MODEL_LIST    = []string{MODEL_1088, MODEL_1T88, MODEL_1L88}
+	MODEL_LIST    = []string{MODEL_1088, MODEL_1920}
 	IMAGE_ID_LIST = []string{ID_ARBI, ID_GRBI, ID_RFIC, ID_ARB2, ID_GRB2, ID_RFI2}
 )

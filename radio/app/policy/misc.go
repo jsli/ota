@@ -5,6 +5,7 @@ import (
 	"github.com/jsli/gtbox/file"
 	"github.com/jsli/gtbox/pathutil"
 	ota_constant "github.com/jsli/ota/radio/app/constant"
+	"strings"
 	"time"
 )
 
@@ -29,4 +30,24 @@ func RecordMd5(path, txt_path string) error {
 func FormatTime(time_unix int64) string {
 	t := time.Unix(int64(time_unix), 0)
 	return t.Format(ota_constant.TIME_FMT)
+}
+
+func ConvertModel(model string) string {
+	model = strings.ToUpper(model)
+	if strings.Contains(model, ota_constant.TAG_1088) ||
+		strings.Contains(model, ota_constant.TAG_1T88) {
+		model = ota_constant.MODEL_1088
+	} else if strings.Contains(model, ota_constant.TAG_1L88) {
+		model = ota_constant.MODEL_1920
+	}
+	return model
+}
+
+func ConvertAndroidPlatform(platform string) string {
+	if strings.HasPrefix(platform, ota_constant.TAG_JB_4_2) {
+		platform = ota_constant.PLATFORM_JB_4_2
+	} else if strings.HasPrefix(platform, ota_constant.TAG_JB_4_3) {
+		platform = ota_constant.PLATFORM_JB_4_3
+	}
+	return platform
 }

@@ -42,18 +42,12 @@ func GenerateOtaPackage(dal *models.Dal, task *models.ReleaseCreationTask, root_
 	if err != nil {
 		return nil, err
 	}
-	image_list := []string{
-		"/home/manson/desktop/HLLTE/HLLTE_CP_2.29.000/Seagull/HL_LTG.bin",
-		"/home/manson/desktop/HLLTE/HLLTE_CP_2.29.000/TTD_WK_NL_MSA_2.29.000/HL_DL_M09_Y0_AI_SKL_Flash.bin",
-	}
-
+	image_list := GenerateImageList(update_request)
 	err = generateRadioImage(radio_dtim_path, radio_image_path, image_list)
 	if err != nil {
 		return nil, err
 	}
 	_, err = file.CopyFile(radio_image_path, fmt.Sprintf("%s%s", zip_path, ota_constant.RADIO_IMAGE_NAME))
-
-	image_list = GenerateImageList(update_request)
 
 	//	4. archive all files
 	err = archive.ArchiveZipFile(zip_path, update_pkg_path)
@@ -63,7 +57,7 @@ func GenerateOtaPackage(dal *models.Dal, task *models.ReleaseCreationTask, root_
 
 	//5.generate update.zip (updatetool + update_pkg.zip)
 	params := make([]string, 5)
-	params[0] = ota_constant.OTA_CMD_PARAM_PLATFORM_PREFIX + ota_constant.MODEL_TO_PLATFORM[update_request.Device.Model]
+	params[0] = ota_constant.OTA_CMD_PARAM_PLATFORM_PREFIX + update_request.Device.Platform
 	params[1] = ota_constant.OTA_CMD_PARAM_PRODUCT_PREFIX + update_request.Device.Model
 	params[2] = ota_constant.OTA_CMD_PARAM_OEM_PREFIX
 	params[3] = ota_constant.OTA_CMD_PARAM_OUTPUT_PREFIX + radio_ota_path
@@ -89,6 +83,7 @@ func GenerateOtaPackage(dal *models.Dal, task *models.ReleaseCreationTask, root_
 		return nil, err
 	}
 
+	release.Delete(dal)
 	id, err := release.Save(dal)
 	if id < 0 || err != nil {
 		return nil, err
@@ -114,13 +109,17 @@ func GenerateImageList(update_request *models.UpdateRequest) []string {
 	image_list := make([]string, 0, 10)
 	for _, image := range request_cps {
 		image_map := image.Images
+		root := ota_constant.MODE_TO_ROOT_PATH[image.Mode]
 		if arbel, ok := image_map[ota_constant.KEY_ARBEL]; ok {
+			arbel = root + arbel
 			image_list = append(image_list, arbel)
 		}
 		if msa, ok := image_map[ota_constant.KEY_MSA]; ok {
+			msa = root + msa
 			image_list = append(image_list, msa)
 		}
 		if rfic, ok := image_map[ota_constant.KEY_RFIC]; ok {
+			rfic = root + rfic
 			image_list = append(image_list, rfic)
 		}
 	}
@@ -163,7 +162,7 @@ func GenerateTestUpdateRequest() (string, *models.UpdateRequest) {
 	update_request := &models.UpdateRequest{}
 
 	device_info := models.DeviceInfo{}
-	device_info.Model = "pxa1t88ff_def"
+	device_info.Model = "PXA1088_DKB"
 	device_info.MacAddr = "08:11:96:8a:a4:38"
 	update_request.Device = device_info
 
@@ -171,21 +170,21 @@ func GenerateTestUpdateRequest() (string, *models.UpdateRequest) {
 
 	hltd := models.CpRequest{}
 	hltd.Mode = "HLTD"
-	hltd.Version = "2.10.000"
+	hltd.Version = "2.47.000"
 	hltd_images := make(map[string]string)
-	hltd_images["ARBEL"] = "LWG/HL_CP_2.40.000/HL_CP/Seagull/HL_LWG_DKB.bin"
-	hltd_images["MSA"] = "LWG/HL_CP_2.40.000/HL_MSA_2.40.000/HL_LWG_M09_B0_SKL_Flash.bin"
-	hltd_images["RFIC"] = "LWG/HL_CP_2.40.000/RFIC/1920_FF/Skylark_LWG.bin"
+	hltd_images["ARBEL"] = "HLTD/HLTD_CP_2.47.000/Seagull/HL_TD_CP.bin"
+	hltd_images["MSA"] = "HLTD/HLTD_CP_2.47.000/HLTD_MSA_2.47.000/A0/HL_TD_M08_AI_A0_Flash.bin"
+	//	hltd_images["RFIC"] = "LWG/HL_CP_2.40.000/RFIC/1920_FF/Skylark_LWG.bin"
 	hltd.Images = hltd_images
 	cps = append(cps, hltd)
 
 	hltd_dsds := models.CpRequest{}
 	hltd_dsds.Mode = "HLTD_DSDS"
-	hltd_dsds.Version = "3.10.000"
+	hltd_dsds.Version = "3.36.000"
 	hltd_dsds_images := make(map[string]string)
-	hltd_dsds_images["ARBEL"] = "LTG/HL_CP_3.40.000/HL_CP/Seagull/HL_LTG_DL.bin"
-	hltd_dsds_images["MSA"] = "LTG/HL_CP_3.40.000/HL_MSA_3.40.000/HL_DL_M09_Y0_AI_SKL_Flash.bin"
-	hltd_dsds_images["RFIC"] = "LTG/HL_CP_3.40.000/RFIC/1920_FF/Skylark_LTG.bin"
+	hltd_dsds_images["ARBEL"] = "HLTD_DSDS/HLTD_DSDS_CP_3.36.000/Seagull_DSDS/HL_TD_DSDS_CP.bin"
+	hltd_dsds_images["MSA"] = "HLTD_DSDS/HLTD_DSDS_CP_3.36.000/HLTD_DSDS_MSA_3.36.000/A0/HL_TD_M08_AI_A0_DSDS_Flash.bin"
+	//	hltd_dsds_images["RFIC"] = "LTG/HL_CP_3.40.000/RFIC/1920_FF/Skylark_LTG.bin"
 	hltd_dsds.Images = hltd_dsds_images
 	cps = append(cps, hltd_dsds)
 
@@ -196,6 +195,6 @@ func GenerateTestUpdateRequest() (string, *models.UpdateRequest) {
 		panic(err)
 	}
 	js_str := string(js_byte)
-	//	fmt.Println(js_str)
+	fmt.Println(js_str)
 	return js_str, update_request
 }

@@ -18,6 +18,11 @@ func ParseRequest(request_str string) (*models.UpdateRequest, error) {
 		return nil, fmt.Errorf("Illegal format [request] : %s", err)
 	}
 
+	model := update_request.Device.Model
+	update_request.Device.Model = ConvertModel(model)
+	platform := "4.2.3"
+	update_request.Device.Platform = ConvertAndroidPlatform(platform)
+
 	return update_request, nil
 }
 
@@ -119,7 +124,6 @@ func ParseDtimWithReader(reader io.Reader) ([]byte, [][]string, error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	fmt.Println("n = ", n)
 	data, err := ParseDtimWithByte(buffer[:n])
 	return buffer[:n], data, err
 }

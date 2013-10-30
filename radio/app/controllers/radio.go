@@ -99,7 +99,7 @@ func (c Radio) Query() revel.Result {
 		c.Response.Status = http.StatusBadRequest
 		return c.RenderJson(nil)
 	}
-//	fmt.Println(dtim_info)
+
 	dal, err := release.NewDal()
 	if err != nil {
 		revel.ERROR.Println("http.StatusInternalServerError: ", err)

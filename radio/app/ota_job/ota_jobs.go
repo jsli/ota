@@ -14,37 +14,39 @@ type ReleaseCreationJob struct {
 }
 
 func (rcj *ReleaseCreationJob) Run() {
-	revel.INFO.Println("Create job : running")
+	tag := "JOB_D: "
+	revel.INFO.Println(tag, "running")
 	dal, err := models.NewDal()
 	if err != nil {
-		revel.ERROR.Println("Create job error: ", err)
+		revel.ERROR.Println(tag, err)
 		return
 	}
 	defer dal.Close()
 
 	task, err := models.PopOneCreationTask(dal)
 	if err != nil {
-		revel.ERROR.Println("Create job error: ", err)
+		revel.ERROR.Println(tag, err)
 		return
 	}
 
 	if task != nil {
-		root_path := fmt.Sprintf("%s%s/", ota_constant.TMP_FILE_ROOT, policy.GenerateRandFileName())
-		pathutil.MkDir(root_path)
-		//		defer file.DeleteDir(root_path)
-		revel.INFO.Println("Create job : processing task : ", task.UpdateRequest, " ----- tmp dir : ", root_path)
-
 		task.Flag = ota_constant.FLAG_CREATING
 		task.ModifiedTs = time.Now().Unix()
 		task.Update(dal)
+
+		root_path := fmt.Sprintf("%s%s/", ota_constant.TMP_FILE_ROOT, policy.GenerateRandFileName())
+		pathutil.MkDir(root_path)
+		defer file.DeleteDir(root_path)
+		revel.INFO.Println(tag, "Processing task : ", task.UpdateRequest, " ----- tmp dir : ", root_path)
+		revel.INFO.Println(tag, "TEMP dir : ", root_path)
 
 		release, err := policy.GenerateOtaPackage(dal, task, root_path)
 		if err != nil {
 			task.Flag = ota_constant.FLAG_CREATE_FAILED
 			task.ModifiedTs = time.Now().Unix()
 			task.Update(dal)
-			revel.ERROR.Println("Create job : processing task failed: ", err)
-			revel.INFO.Println("Create job : processing task failed: ", task.Id)
+			revel.ERROR.Println(tag, "Failed: ", err)
+			revel.INFO.Println(tag, "Failed, task id= ", task.Id, " error msg: ", err)
 			return
 		}
 
