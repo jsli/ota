@@ -164,6 +164,7 @@ func GenerateTestUpdateRequest() (string, *models.UpdateRequest) {
 	device_info := models.DeviceInfo{}
 	device_info.Model = "PXA1088_DKB"
 	device_info.MacAddr = "08:11:96:8a:a4:38"
+	device_info.Platform = "4.2.3"
 	update_request.Device = device_info
 
 	cps := make([]models.CpRequest, 0, 2)

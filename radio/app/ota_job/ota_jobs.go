@@ -38,7 +38,7 @@ func (rcj *ReleaseCreationJob) Run() {
 		root_path := fmt.Sprintf("%s%s/", ota_constant.TMP_FILE_ROOT, policy.GenerateRandFileName())
 		pathutil.MkDir(root_path)
 		defer file.DeleteDir(root_path)
-		revel.INFO.Println(tag, "Processing task : ", task.UpdateRequest, " ----- tmp dir : ", root_path)
+		revel.INFO.Println(tag, "Processing task : ", task.UpdateRequest)
 		revel.INFO.Println(tag, "TEMP dir : ", root_path)
 
 		release, err := policy.GenerateOtaPackage(dal, task, root_path)

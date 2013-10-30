@@ -20,7 +20,7 @@ func ParseRequest(request_str string) (*models.UpdateRequest, error) {
 
 	model := update_request.Device.Model
 	update_request.Device.Model = ConvertModel(model)
-	platform := "4.2.3"
+	platform := update_request.Device.Platform
 	update_request.Device.Platform = ConvertAndroidPlatform(platform)
 
 	return update_request, nil
