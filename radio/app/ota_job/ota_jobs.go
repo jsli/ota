@@ -2,6 +2,7 @@ package ota_job
 
 import (
 	"fmt"
+	"github.com/jsli/gtbox/file"
 	"github.com/jsli/gtbox/pathutil"
 	ota_constant "github.com/jsli/ota/radio/app/constant"
 	"github.com/jsli/ota/radio/app/models"

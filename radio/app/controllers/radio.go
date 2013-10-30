@@ -54,7 +54,7 @@ func (c Radio) OtaCreate() revel.Result {
 	if err != nil {
 		revel.ERROR.Println("http.StatusInternalServerError: ", err)
 		c.Response.Status = http.StatusInternalServerError
-		result.Extra[ota_constant.KEY_ERROR] = err
+		result.Extra.ErrorMessage = err
 		return c.RenderJson(result)
 	}
 
@@ -70,21 +70,20 @@ func (c Radio) OtaCreate() revel.Result {
 		id, err := task.Save(dal)
 		if id < 0 || err != nil {
 			revel.ERROR.Println("http.StatusInternalServerError: ", err)
-			result.Extra[ota_constant.KEY_ERROR] = "Duplicated creation task"
+			result.Extra.ErrorMessage = "Duplicated creation task, wait"
 		} else {
 			revel.INFO.Println("OtaCreate request, create task: ", task.UpdateRequest)
-			result.Extra[ota_constant.KEY_ERROR] = "Create creation task, try later"
+			result.Extra.ErrorMessage = "Create creation task, try later"
 		}
 
 		c.Response.Status = http.StatusNotFound
 		return c.RenderJson(result)
 	} else {
 		revel.INFO.Println("OtaCreate, find release: ", radio)
-		result.Data[ota_constant.KEY_URL] = fmt.Sprintf("http://%s/static/%s/%s", c.Request.Host, radio.FingerPrint, ota_constant.RADIO_OTA_PACKAGE_NAME)
-		result.Data[ota_constant.KEY_MD5] = radio.Md5
-		result.Data[ota_constant.KEY_SIZE] = radio.Size
-		result.Data[ota_constant.KEY_CREATED_TIME] = policy.FormatTime(radio.CreatedTs)
-		result.Extra[ota_constant.KEY_ERROR] = nil
+		result.Data.Url = fmt.Sprintf("http://%s/static/%s/%s", c.Request.Host, radio.FingerPrint, ota_constant.RADIO_OTA_PACKAGE_NAME)
+		result.Data.Md5 = radio.Md5
+		result.Data.Size = radio.Size
+		result.Data.CreatedTime = policy.FormatTime(radio.CreatedTs)
 	}
 
 	return c.RenderJson(result)
@@ -113,14 +112,12 @@ func (c Radio) Query() revel.Result {
 	if err != nil {
 		revel.ERROR.Println("http.StatusInternalServerError: ", err)
 		c.Response.Status = http.StatusInternalServerError
-		result.Extra[ota_constant.KEY_ERROR] = err
+		result.Extra.ErrorMessage = err
 		return c.RenderJson(result)
 	} else {
-		if result.Data == nil || len(result.Data) == 0 {
+		if result.Data.Available == nil || len(result.Data.Available) == 0 {
 			c.Response.Status = http.StatusNotFound
 			return c.RenderJson(nil)
-		} else {
-			result.Extra[ota_constant.KEY_ERROR] = nil
 		}
 	}
 

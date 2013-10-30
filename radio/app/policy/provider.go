@@ -14,7 +14,7 @@ import (
 func ProvideRadioRelease(dal *models.Dal, dtim_info *DtimInfo, result *models.RadioOtaReleaseResult, fp string) (*models.RadioOtaRelease, error) {
 	query := fmt.Sprintf("SELECT * FROM %s WHERE fingerprint='%s' AND flag=%d LIMIT 1",
 		ota_constant.TABLE_RADIO_OTA_RELEASE, fp, cp_constant.AVAILABLE_FLAG)
-//	fmt.Println(query)
+	//	fmt.Println(query)
 	release, err := models.FindRadioOtaRelease(dal, query)
 	if err != nil {
 		return nil, err
@@ -27,7 +27,7 @@ func ProvideRadioRelease(dal *models.Dal, dtim_info *DtimInfo, result *models.Ra
 }
 
 func ProvideQueryData(dal *release.Dal, dtim_info *DtimInfo, result *models.QueryResult) error {
-	result.Data = make(map[string]interface{})
+	//	result.Data = make(map[string]interface{})
 	current := make(map[string]interface{})
 	available := make(map[string]interface{})
 	for _, cp_info := range dtim_info.CpMap {
@@ -47,8 +47,8 @@ func ProvideQueryData(dal *release.Dal, dtim_info *DtimInfo, result *models.Quer
 		filterByRuleFile(data, cp_info)
 		available[cp_info.Mode] = data
 	}
-	result.Data[ota_constant.KEY_RESULT_AVAILABLE] = available
-	result.Data[ota_constant.KEY_RESULT_CURRENT] = current
+	result.Data.Available = available
+	result.Data.Current = current
 
 	return nil
 }
