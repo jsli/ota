@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"github.com/jsli/gtbox/file"
 	"github.com/jsli/gtbox/pathutil"
+	ota_constant "github.com/jsli/ota/radio/app/constant"
+	"time"
 )
 
 func RecordMd5(path, txt_path string) error {
@@ -22,4 +24,9 @@ func RecordMd5(path, txt_path string) error {
 		}
 	}
 	return nil
+}
+
+func FormatTime(time_unix int64) string {
+	t := time.Unix(int64(time_unix), 0)
+	return t.Format(ota_constant.TIME_FMT)
 }

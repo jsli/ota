@@ -8,6 +8,7 @@ import (
 	"github.com/jsli/ota/radio/app/policy"
 	"github.com/robfig/revel"
 	"net/http"
+	"time"
 )
 
 type Radio struct {
@@ -63,6 +64,8 @@ func (c Radio) OtaCreate() revel.Result {
 		task.UpdateRequest = request_json
 		task.Data = dtim_info.BinaryData
 		task.FingerPrint = fp
+		task.CreatedTs = time.Now().Unix()
+		task.ModifiedTs = task.CreatedTs
 
 		id, err := task.Save(dal)
 		if id < 0 || err != nil {
@@ -80,6 +83,7 @@ func (c Radio) OtaCreate() revel.Result {
 		result.Data[ota_constant.KEY_URL] = fmt.Sprintf("http://%s/static/%s/%s", c.Request.Host, radio.FingerPrint, ota_constant.RADIO_OTA_PACKAGE_NAME)
 		result.Data[ota_constant.KEY_MD5] = radio.Md5
 		result.Data[ota_constant.KEY_SIZE] = radio.Size
+		result.Data[ota_constant.KEY_CREATED_TIME] = policy.FormatTime(radio.CreatedTs)
 		result.Extra[ota_constant.KEY_ERROR] = nil
 	}
 
@@ -95,6 +99,7 @@ func (c Radio) Query() revel.Result {
 		c.Response.Status = http.StatusBadRequest
 		return c.RenderJson(nil)
 	}
+//	fmt.Println(dtim_info)
 	dal, err := release.NewDal()
 	if err != nil {
 		revel.ERROR.Println("http.StatusInternalServerError: ", err)

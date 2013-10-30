@@ -57,6 +57,7 @@ const (
 	KEY_URL              = "url"
 	KEY_MD5              = "md5"
 	KEY_SIZE             = "size"
+	KEY_CREATED_TIME     = "created_time"
 	KEY_ERROR            = "error"
 
 	PLATFORM_JB_4_2 = "jb-4.2"
@@ -84,6 +85,10 @@ const (
 	FLAG_CREATE_FAILED = 32
 )
 
+const (
+	TIME_FMT = "2006-01-02 15:04:05"
+)
+
 var (
 	MODEL_TO_TEMPLATE = map[string]string{
 		MODEL_1088: TEMPLATE_HELAN_ROOT,
@@ -96,6 +101,7 @@ var (
 		MODEL_1L88: PLATFORM_JB_4_3,
 	}
 
-	KEY_LIST   = []string{KEY_ARBEL, KEY_MSA, KEY_RFIC}
-	MODEL_LIST = []string{MODEL_1088, MODEL_1T88, MODEL_1L88}
+	KEY_LIST      = []string{KEY_ARBEL, KEY_MSA, KEY_RFIC}
+	MODEL_LIST    = []string{MODEL_1088, MODEL_1T88, MODEL_1L88}
+	IMAGE_ID_LIST = []string{ID_ARBI, ID_GRBI, ID_RFIC, ID_ARB2, ID_GRB2, ID_RFI2}
 )

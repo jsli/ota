@@ -119,7 +119,7 @@ func ParseDtimWithReader(reader io.Reader) ([]byte, [][]string, error) {
 	if err != nil {
 		return nil, nil, err
 	}
-
+	fmt.Println("n = ", n)
 	data, err := ParseDtimWithByte(buffer[:n])
 	return buffer[:n], data, err
 }
@@ -162,7 +162,7 @@ func ParseDtimWithByte(dtim_byte []byte) ([][]string, error) {
 
 	counter := 0
 	for index, image := range image_list {
-		if strings.HasPrefix(image, "ARBI") || strings.HasPrefix(image, "GRBI") {
+		if ValidateImageId(image[:4]) == nil {
 			data[index] = make([]string, 0, 4)
 			counter += counter
 			attrs := strings.Split(image, "|")

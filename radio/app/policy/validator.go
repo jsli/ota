@@ -116,3 +116,12 @@ func ValidateSim(sim string) error {
 	}
 	return fmt.Errorf("Illegal SIM: %s", sim)
 }
+
+func ValidateImageId(id string) error {
+	for _, _id := range ota_constant.IMAGE_ID_LIST {
+		if strings.ToUpper(id) == _id {
+			return nil
+		}
+	}
+	return fmt.Errorf("Illegal Image Id: %s", id)
+}

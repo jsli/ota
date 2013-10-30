@@ -46,13 +46,13 @@ func GenerateOtaPackage(dal *models.Dal, task *models.ReleaseCreationTask, root_
 		"/home/manson/desktop/HLLTE/HLLTE_CP_2.29.000/Seagull/HL_LTG.bin",
 		"/home/manson/desktop/HLLTE/HLLTE_CP_2.29.000/TTD_WK_NL_MSA_2.29.000/HL_DL_M09_Y0_AI_SKL_Flash.bin",
 	}
-		
+
 	err = generateRadioImage(radio_dtim_path, radio_image_path, image_list)
 	if err != nil {
 		return nil, err
 	}
 	_, err = file.CopyFile(radio_image_path, fmt.Sprintf("%s%s", zip_path, ota_constant.RADIO_IMAGE_NAME))
-	
+
 	image_list = GenerateImageList(update_request)
 
 	//	4. archive all files
@@ -77,6 +77,9 @@ func GenerateOtaPackage(dal *models.Dal, task *models.ReleaseCreationTask, root_
 	release := &models.RadioOtaRelease{}
 	release.Flag = ota_constant.FLAG_AVAILABLE
 	release.FingerPrint = GenerateOtaPackageFingerPrint(image_list)
+	release.ReleaseNote = "empty"
+	release.CreatedTs = time.Now().Unix()
+	release.ModifiedTs = release.CreatedTs
 	release.Md5, err = file.Md5SumFile(radio_ota_path)
 	if err != nil {
 		return nil, err
