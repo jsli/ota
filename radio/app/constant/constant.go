@@ -6,7 +6,7 @@ import (
 
 //path
 const (
-	OTA_ROOT               = "/home/manson/OTA/"
+	OTA_ROOT               = "/home/jianmin/OTA/"
 	TMP_FILE_ROOT          = OTA_ROOT + "tmp/"
 	SCRIPTS_ROOT           = OTA_ROOT + "scripts/"
 	FILTER_ROOT            = SCRIPTS_ROOT + "filter/"

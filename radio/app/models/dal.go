@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	DNS    = "root:lijinsong@tcp(localhost:3306)/ota?charset=utf8"
+	DNS    = "root:123456@tcp(localhost:3306)/ota?charset=utf8"
 	DRIVER = "mysql"
 )
 

@@ -17,7 +17,7 @@ GET     /favicon.ico                            404
 GET     /public/*filepath                       Static.Serve("public")
 
 #--the path should be changed in other environment
-GET     /static/*filepath                       Static.Serve("/home/manson/OTA/release/RADIO_OTA")
+GET     /static/*filepath                       Static.Serve("/home/jianmin/OTA/release/RADIO_OTA")
 
 # Catch all
 *       /:controller/:action                    :controller.:action
