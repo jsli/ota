@@ -7,6 +7,8 @@ module:testrunner
 GET     /                                                       App.Index
 
 GET     /radio                                                  Radio.Index
+GET     /radio/maintain                                         Radio.Maintain
+
 POST    /radio/query                                            Radio.Query
 POST    /radio/ota/create                                       Radio.OtaCreate
 
@@ -20,4 +22,4 @@ GET     /public/*filepath                       Static.Serve("public")
 GET     /static/*filepath                       Static.Serve("/home/jianmin/OTA/release/radio_ota")
 
 # Catch all
-*       /:controller/:action                    :controller.:action
+#*       /:controller/:action                    :controller.:action

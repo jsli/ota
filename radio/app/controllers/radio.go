@@ -16,11 +16,31 @@ type Radio struct {
 }
 
 func (c Radio) Index() revel.Result {
+	if checkMaintain() {
+		return c.Redirect("/radio/maintain")
+	}
 	_, j := policy.GenerateTestUpdateRequest()
 	return c.RenderJson(j)
 }
 
+func (c Radio) Maintain() revel.Result {
+	result := models.NewMaintainResult()
+	return c.RenderJson(result)
+}
+
+func checkMaintain() bool {
+	result, found := revel.Config.Bool("maintain")
+	if found && result {
+		return true
+	}
+	return false
+}
+
 func (c Radio) OtaCreate() revel.Result {
+	if checkMaintain() {
+		return c.Redirect("/radio/maintain")
+	}
+
 	revel.INFO.Println("OtaCreate request: ", c.Request)
 	validator := &policy.RadioValidator{}
 	dtim_info, err := validator.ValidateAndParseRadioDtim(c.Params)
@@ -90,6 +110,10 @@ func (c Radio) OtaCreate() revel.Result {
 }
 
 func (c Radio) Query() revel.Result {
+	if checkMaintain() {
+		return c.Redirect("/radio/maintain")
+	}
+
 	revel.INFO.Println("Query request: ", c.Request)
 	validator := &policy.RadioValidator{}
 	dtim_info, err := validator.ValidateAndParseRadioDtim(c.Params)
