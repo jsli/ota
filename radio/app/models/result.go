@@ -50,3 +50,13 @@ func NewRadioOtaReleaseResult() *RadioOtaReleaseResult {
 	result.Extra = ExtraInfo{ApiVersion: API_VERSION, ErrorMessage: nil}
 	return &result
 }
+
+type MaintainResult struct {
+	Result
+}
+
+func NewMaintainResult() *MaintainResult {
+	result := MaintainResult{}
+	result.Extra = ExtraInfo{ApiVersion: API_VERSION, ErrorMessage: "Maintain"}
+	return &result
+}
