@@ -28,6 +28,11 @@ type CpImage struct {
 	Mode    string
 }
 
+func (ci CpImage) String() string {
+	return fmt.Sprintf("CpImage(Id=%s, Network=%s, Sim=%s, Path=%s, Prefix=%s, Version=%s, Mode=%s)",
+		ci.Id, ci.Network, ci.Sim, ci.Path, ci.Prefix, ci.Version, ci.Mode)
+}
+
 func (ci *CpImage) LoadSelf(attrs []string) {
 	ci.Id = attrs[0]
 	ci.Network = attrs[1]
@@ -35,9 +40,9 @@ func (ci *CpImage) LoadSelf(attrs []string) {
 	ci.Path = attrs[3]
 
 	slice := strings.Split(attrs[3], "/")
-	ci.Mode = slice[0]
-	ci.Version = cp_policy.ExtractVersion(slice[1])
-	ci.Prefix = strings.TrimSuffix(slice[1], ci.Version)
+	ci.Mode = slice[1]
+	ci.Version = cp_policy.ExtractVersion(slice[2])
+	ci.Prefix = strings.TrimSuffix(slice[2], ci.Version)
 }
 
 func (ci *CpImage) Validate() (err error) {

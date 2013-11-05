@@ -277,7 +277,6 @@ func getCpList(dal *release.Dal, cp_info *CpInfo) ([]*release.CpRelease, error) 
 	if len(cp_list) == 0 {
 		return nil, nil
 	}
-
 	return cp_list, nil
 }
 
