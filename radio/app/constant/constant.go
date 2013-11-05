@@ -18,7 +18,7 @@ const (
 	ZIP_DIR_NAME           = "zip/"
 	UPDATE_PKG_NAME        = "update_pkg.zip"
 	RADIO_OTA_PACKAGE_NAME = "update.zip"
-	RADIO_DTIM_NAME        = "Radio.dtim"
+	RADIO_DTIM_NAME        = "radio.dtim"
 	RADIO_IMAGE_NAME       = "radio.img"
 	CHECKSUM_TXT_NAME      = "checksum.txt"
 
