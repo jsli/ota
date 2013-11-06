@@ -87,7 +87,9 @@ func GenerateOtaPackage(dal *models.Dal, task *models.ReleaseCreationTask, root_
 	//6.insert db
 	release := &models.RadioOtaRelease{}
 	release.Flag = ota_constant.FLAG_AVAILABLE
-	release.FingerPrint = GenerateOtaPackageFingerPrint(image_list)
+	fp := GenerateOtaPackageFingerPrint(image_list)
+	fp = fmt.Sprintf("%s.%s.%s", update_request.Device.Model, update_request.Device.Platform, fp)
+	release.FingerPrint = fp
 	release.ReleaseNote = "empty"
 	release.CreatedTs = time.Now().Unix()
 	release.ModifiedTs = release.CreatedTs
@@ -164,7 +166,6 @@ func gzipCpImage(path_list []string) error {
 		params := make([]string, 0, 5)
 		params = append(params, ota_constant.GZIP_CMD_PARAMS...)
 		params = append(params, path)
-		fmt.Println(params)
 		res, output, err := sys.ExecCmd(ota_constant.GZIP_CMD_NAME, params)
 		if !res || err != nil {
 			return fmt.Errorf("%s failed: %s\n\tdetail message: %s\n", ota_constant.GZIP_CMD_PARAMS, err, output)
@@ -179,7 +180,6 @@ func generateRadioImage(radio_dtim_path string, radio_image_path string, image_l
 	params = append(params, radio_dtim_path)
 	params = append(params, radio_image_path)
 	params = append(params, image_list...)
-	fmt.Println(params)
 	res, output, err := sys.ExecCmd(ota_constant.RESIGN_DTIM_CMD, params)
 	if !res || err != nil {
 		return fmt.Errorf("%s failed: %s\n\tdetail message: %s\n", ota_constant.RESIGN_DTIM_CMD, err, output)
@@ -192,7 +192,6 @@ func GenerateTestUpdateRequest() (string, *models.UpdateRequest) {
 
 	device_info := models.DeviceInfo{}
 	device_info.Model = "PXA1088_DKB"
-	device_info.MacAddr = "08:11:96:8a:a4:38"
 	device_info.Platform = "4.3"
 	update_request.Device = device_info
 
@@ -200,10 +199,10 @@ func GenerateTestUpdateRequest() (string, *models.UpdateRequest) {
 
 	hltd := models.CpRequest{}
 	hltd.Mode = "HLTD"
-	hltd.Version = "2.52.000"
+	hltd.Version = "2.44.000"
 	hltd_images := make(map[string]string)
-	hltd_images["ARBEL"] = "HL/HLTD/HLTD_CP_2.52.000/Seagull/HL_TD_CP.bin"
-	hltd_images["MSA"] = "HL/HLTD/HLTD_CP_2.52.000/HLTD_MSA_2.52.000/A0/HL_TD_M08_AI_A0_Flash.bin"
+	hltd_images["ARBEL"] = "HL/HLTD/HLTD_CP_2.44.000/Seagull/HL_TD_CP.bin"
+	hltd_images["MSA"] = "HL/HLTD/HLTD_CP_2.44.000/HLTD_MSA_2.44.000/A0/HL_TD_M08_AI_A0_Flash.bin"
 	//	hltd_images["ARBEL"] = "HL/HLTD/HLTD_CP_2.52.000/Seagull/HL_TD_CP.bin"
 	//	hltd_images["MSA"] = "HL/HLTD/HLTD_CP_2.52.000/HLTD_MSA_2.52.000/A0/HL_TD_M08_AI_A0_Flash.bin"
 	//	hltd_images["RFIC"] = "LWG/HL_CP_2.40.000/RFIC/1920_FF/Skylark_LWG.bin"
