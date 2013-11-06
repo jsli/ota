@@ -86,10 +86,10 @@ func filterByRuleFile(data map[string]map[string][]string, cp_info *CpInfo) {
 				if check(path, filter) {
 					filtered = append(filtered, path)
 				} else {
-					fmt.Println("Drop " + path)
+//					fmt.Println("Drop " + path)
 				}
 			}
-			fmt.Printf("filtered %s", filtered)
+//			fmt.Printf("filtered %s", filtered)
 			original_data[key] = filtered
 		}
 	}
