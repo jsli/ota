@@ -68,6 +68,7 @@ func (c Radio) OtaCreate() revel.Result {
 	update_request.Cps = policy.SortCps(update_request)
 	sorted_image_list := policy.GenerateImageList(update_request)
 	fp := policy.GenerateOtaPackageFingerPrint(sorted_image_list)
+	fp = fmt.Sprintf("%s.%s.%s", update_request.Device.Model, update_request.Device.Platform, fp)
 
 	result := models.NewRadioOtaReleaseResult()
 	radio, err := policy.ProvideRadioRelease(dal, dtim_info, result, fp)
@@ -83,6 +84,8 @@ func (c Radio) OtaCreate() revel.Result {
 		task.Flag = ota_constant.FLAG_INIT
 		task.UpdateRequest = request_json
 		task.Data = dtim_info.BinaryData
+		task.Model = update_request.Device.Model
+		task.Platform = update_request.Device.Platform
 		task.FingerPrint = fp
 		task.CreatedTs = time.Now().Unix()
 		task.ModifiedTs = task.CreatedTs

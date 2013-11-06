@@ -1,6 +1,8 @@
 package models
 
-import ()
+import (
+	ota_constant "github.com/jsli/ota/radio/app/constant"
+)
 
 const (
 	API_VERSION = "1.0"
@@ -8,7 +10,8 @@ const (
 
 type ExtraInfo struct {
 	ApiVersion   string      `json:"api_version"`
-	ErrorMessage interface{} `json:"error"`
+	ErrorCode    int         `json:"error_code"`
+	ErrorMessage interface{} `json:"error_message"`
 }
 
 type Result struct {
@@ -28,7 +31,7 @@ type QueryResult struct {
 func NewQueryResult() *QueryResult {
 	result := QueryResult{}
 	result.Data = QueryData{}
-	result.Extra = ExtraInfo{ApiVersion: API_VERSION, ErrorMessage: nil}
+	result.Extra = ExtraInfo{ApiVersion: API_VERSION, ErrorCode: ota_constant.ERROR_CODE_NOERR, ErrorMessage: nil}
 	return &result
 }
 
@@ -47,7 +50,7 @@ type RadioOtaReleaseResult struct {
 func NewRadioOtaReleaseResult() *RadioOtaReleaseResult {
 	result := RadioOtaReleaseResult{}
 	result.Data = RadioOtaReleaseData{}
-	result.Extra = ExtraInfo{ApiVersion: API_VERSION, ErrorMessage: nil}
+	result.Extra = ExtraInfo{ApiVersion: API_VERSION, ErrorCode: ota_constant.ERROR_CODE_NOERR, ErrorMessage: nil}
 	return &result
 }
 
@@ -57,6 +60,6 @@ type MaintainResult struct {
 
 func NewMaintainResult() *MaintainResult {
 	result := MaintainResult{}
-	result.Extra = ExtraInfo{ApiVersion: API_VERSION, ErrorMessage: "Maintain"}
+	result.Extra = ExtraInfo{ApiVersion: API_VERSION, ErrorCode: ota_constant.ERROR_CODE_NOERR, ErrorMessage: "Maintain"}
 	return &result
 }

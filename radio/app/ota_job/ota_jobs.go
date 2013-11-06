@@ -43,7 +43,13 @@ func (rcj *ReleaseCreationJob) Run() {
 
 		release, err := policy.GenerateOtaPackage(dal, task, root_path)
 		if err != nil {
-			task.Flag = ota_constant.FLAG_CREATE_FAILED
+			if task.RetryCount >= 5 {
+				task.Flag = ota_constant.FLAG_DROPPED
+			} else {
+				task.RetryCount = task.RetryCount + 1
+				task.Flag = ota_constant.FLAG_INIT
+				revel.INFO.Println(tag, "Failed, task id= ", task.Id, " retry: ", task.RetryCount)
+			}
 			task.ModifiedTs = time.Now().Unix()
 			task.Update(dal)
 			revel.ERROR.Println(tag, "Failed: ", err)
