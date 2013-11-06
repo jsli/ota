@@ -137,6 +137,12 @@ func PopOneCreationTask(dal *Dal) (*ReleaseCreationTask, error) {
 	return FindReleaseCreationTask(dal, query)
 }
 
+func FindReleaseCreationTaskByFp(dal *Dal, fingerprint string) (*ReleaseCreationTask, error) {
+	query := fmt.Sprintf("SELECT * FROM %s WHERE fingerprint='%s' LIMIT 1",
+		ota_constant.TABLE_RELEASE_CREATION_TASK, fingerprint)
+	return FindReleaseCreationTask(dal, query)
+}
+
 func FindReleaseCreationTask(dal *Dal, query string) (*ReleaseCreationTask, error) {
 	row := dal.DB.QueryRow(query)
 	rct := ReleaseCreationTask{}
