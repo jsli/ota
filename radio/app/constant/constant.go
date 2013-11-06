@@ -12,6 +12,8 @@ const (
 	FILTER_ROOT            = SCRIPTS_ROOT + "filter/"
 	TEMPLATE_ROOT          = OTA_ROOT + "template/"
 	RELEASE_ROOT           = OTA_ROOT + "release/"
+	CP_RELEASE_ROOT        = RELEASE_ROOT + "CP/"
+	CP_SERVER_MIRROR_ROOT  = CP_RELEASE_ROOT + "CP_SERVER_MIRROR/"
 	RADIO_OTA_RELEASE_ROOT = RELEASE_ROOT + "radio_ota/"
 	TOOLS_ROOT             = OTA_ROOT + "updatetool/"
 
@@ -24,6 +26,7 @@ const (
 
 	UPDATE_CMD_NAME  = "updatemk"
 	RESIGN_DTIM_NAME = "dtim/resigndtim.rb"
+	GZIP_CMD_NAME    = "gzip"
 
 	TEMPLATE_HELAN_ROOT    = TEMPLATE_ROOT + "HELAN/"
 	TEMPLATE_HELANLTE_ROOT = TEMPLATE_ROOT + "HELANLTE/"
@@ -103,7 +106,8 @@ var (
 
 	MODE_TO_ROOT_PATH = cp_constant.MODE_TO_ROOT_PATH
 
-	KEY_LIST      = []string{KEY_ARBEL, KEY_MSA, KEY_RFIC}
-	MODEL_LIST    = []string{MODEL_1088, MODEL_1920}
-	IMAGE_ID_LIST = []string{ID_ARBI, ID_GRBI, ID_RFIC, ID_ARB2, ID_GRB2, ID_RFI2}
+	KEY_LIST        = []string{KEY_ARBEL, KEY_MSA, KEY_RFIC}
+	MODEL_LIST      = []string{MODEL_1088, MODEL_1920}
+	IMAGE_ID_LIST   = []string{ID_ARBI, ID_GRBI, ID_RFIC, ID_ARB2, ID_GRB2, ID_RFI2}
+	GZIP_CMD_PARAMS = []string{"-n", "-9"}
 )

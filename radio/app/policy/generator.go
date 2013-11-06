@@ -42,11 +42,28 @@ func GenerateOtaPackage(dal *models.Dal, task *models.ReleaseCreationTask, root_
 	if err != nil {
 		return nil, err
 	}
+
+	image_list_final := make([]string, 0, 5)
 	image_list := GenerateImageList(update_request)
-	err = generateRadioImage(radio_dtim_path, radio_image_path, image_list)
+	for _, image_rel_path := range image_list {
+		dest_path := root_path + image_rel_path
+		file.CopyFile(ota_constant.CP_SERVER_MIRROR_ROOT+image_rel_path, dest_path)
+		image_list_final = append(image_list_final, dest_path)
+	}
+
+	err = gzipCpImage(image_list_final)
 	if err != nil {
 		return nil, err
 	}
+	for _, image_path := range image_list_final {
+		file.CopyFile(image_path+".gz", image_path)
+	}
+
+	err = generateRadioImage(radio_dtim_path, radio_image_path, image_list_final)
+	if err != nil {
+		return nil, err
+	}
+	//	file.CopyFile("/home/manson/desktop/radio.img", radio_image_path)
 	_, err = file.CopyFile(radio_image_path, fmt.Sprintf("%s%s", zip_path, ota_constant.RADIO_IMAGE_NAME))
 
 	//	4. archive all files
@@ -109,17 +126,13 @@ func GenerateImageList(update_request *models.UpdateRequest) []string {
 	image_list := make([]string, 0, 10)
 	for _, image := range request_cps {
 		image_map := image.Images
-		root := ota_constant.MODE_TO_ROOT_PATH[image.Mode]
 		if arbel, ok := image_map[ota_constant.KEY_ARBEL]; ok {
-			arbel = root + arbel
 			image_list = append(image_list, arbel)
 		}
 		if msa, ok := image_map[ota_constant.KEY_MSA]; ok {
-			msa = root + msa
 			image_list = append(image_list, msa)
 		}
 		if rfic, ok := image_map[ota_constant.KEY_RFIC]; ok {
-			rfic = root + rfic
 			image_list = append(image_list, rfic)
 		}
 	}
@@ -146,11 +159,27 @@ func generateOtaPackage(params []string) error {
 	return nil
 }
 
+func gzipCpImage(path_list []string) error {
+	for _, path := range path_list {
+		params := make([]string, 0, 5)
+		params = append(params, ota_constant.GZIP_CMD_PARAMS...)
+		params = append(params, path)
+		fmt.Println(params)
+		res, output, err := sys.ExecCmd(ota_constant.GZIP_CMD_NAME, params)
+		if !res || err != nil {
+			return fmt.Errorf("%s failed: %s\n\tdetail message: %s\n", ota_constant.GZIP_CMD_PARAMS, err, output)
+		}
+	}
+
+	return nil
+}
+
 func generateRadioImage(radio_dtim_path string, radio_image_path string, image_list []string) error {
 	params := make([]string, 0, 5)
 	params = append(params, radio_dtim_path)
 	params = append(params, radio_image_path)
 	params = append(params, image_list...)
+	fmt.Println(params)
 	res, output, err := sys.ExecCmd(ota_constant.RESIGN_DTIM_CMD, params)
 	if !res || err != nil {
 		return fmt.Errorf("%s failed: %s\n\tdetail message: %s\n", ota_constant.RESIGN_DTIM_CMD, err, output)
@@ -164,30 +193,32 @@ func GenerateTestUpdateRequest() (string, *models.UpdateRequest) {
 	device_info := models.DeviceInfo{}
 	device_info.Model = "PXA1088_DKB"
 	device_info.MacAddr = "08:11:96:8a:a4:38"
-	device_info.Platform = "4.2.3"
+	device_info.Platform = "4.3"
 	update_request.Device = device_info
 
 	cps := make([]models.CpRequest, 0, 2)
 
 	hltd := models.CpRequest{}
 	hltd.Mode = "HLTD"
-	hltd.Version = "2.47.000"
+	hltd.Version = "2.52.000"
 	hltd_images := make(map[string]string)
-	hltd_images["ARBEL"] = "HLTD/HLTD_CP_2.47.000/Seagull/HL_TD_CP.bin"
-	hltd_images["MSA"] = "HLTD/HLTD_CP_2.47.000/HLTD_MSA_2.47.000/A0/HL_TD_M08_AI_A0_Flash.bin"
+	hltd_images["ARBEL"] = "HL/HLTD/HLTD_CP_2.52.000/Seagull/HL_TD_CP.bin"
+	hltd_images["MSA"] = "HL/HLTD/HLTD_CP_2.52.000/HLTD_MSA_2.52.000/A0/HL_TD_M08_AI_A0_Flash.bin"
+	//	hltd_images["ARBEL"] = "HL/HLTD/HLTD_CP_2.52.000/Seagull/HL_TD_CP.bin"
+	//	hltd_images["MSA"] = "HL/HLTD/HLTD_CP_2.52.000/HLTD_MSA_2.52.000/A0/HL_TD_M08_AI_A0_Flash.bin"
 	//	hltd_images["RFIC"] = "LWG/HL_CP_2.40.000/RFIC/1920_FF/Skylark_LWG.bin"
 	hltd.Images = hltd_images
 	cps = append(cps, hltd)
 
-	hltd_dsds := models.CpRequest{}
-	hltd_dsds.Mode = "HLTD_DSDS"
-	hltd_dsds.Version = "3.36.000"
-	hltd_dsds_images := make(map[string]string)
-	hltd_dsds_images["ARBEL"] = "HLTD_DSDS/HLTD_DSDS_CP_3.36.000/Seagull_DSDS/HL_TD_DSDS_CP.bin"
-	hltd_dsds_images["MSA"] = "HLTD_DSDS/HLTD_DSDS_CP_3.36.000/HLTD_DSDS_MSA_3.36.000/A0/HL_TD_M08_AI_A0_DSDS_Flash.bin"
+	//	hltd_dsds := models.CpRequest{}
+	//	hltd_dsds.Mode = "HLTD_DSDS"
+	//	hltd_dsds.Version = "3.36.000"
+	//	hltd_dsds_images := make(map[string]string)
+	//	hltd_dsds_images["ARBEL"] = "HLTD_DSDS/HLTD_DSDS_CP_3.36.000/Seagull_DSDS/HL_TD_DSDS_CP.bin"
+	//	hltd_dsds_images["MSA"] = "HLTD_DSDS/HLTD_DSDS_CP_3.36.000/HLTD_DSDS_MSA_3.36.000/A0/HL_TD_M08_AI_A0_DSDS_Flash.bin"
 	//	hltd_dsds_images["RFIC"] = "LTG/HL_CP_3.40.000/RFIC/1920_FF/Skylark_LTG.bin"
-	hltd_dsds.Images = hltd_dsds_images
-	cps = append(cps, hltd_dsds)
+	//	hltd_dsds.Images = hltd_dsds_images
+	//	cps = append(cps, hltd_dsds)
 
 	update_request.Cps = cps
 
