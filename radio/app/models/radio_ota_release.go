@@ -115,14 +115,14 @@ func (rct *ReleaseCreationTask) Save(dal *Dal) (int64, error) {
 }
 
 func (rct *ReleaseCreationTask) Update(dal *Dal) (int64, error) {
-	update_sql := fmt.Sprintf("UPDATE %s SET release_id=?, flag=?, retry_count=?, update_request=?, model=?, platform=?, fingerprint=?, binary_data=?, modified_ts=?, created_ts=?",
+	update_sql := fmt.Sprintf("UPDATE %s SET release_id=?, flag=?, retry_count=? WHERE fingerprint=?",
 		ota_constant.TABLE_RELEASE_CREATION_TASK)
 	stmt, err := dal.DB.Prepare(update_sql)
 
 	if err != nil {
 		return -1, err
 	}
-	res, err := stmt.Exec(rct.ReleaseId, rct.Flag, rct.RetryCount, rct.UpdateRequest, rct.Model, rct.Platform, rct.FingerPrint, rct.Data, rct.ModifiedTs, rct.CreatedTs)
+	res, err := stmt.Exec(rct.ReleaseId, rct.Flag, rct.RetryCount, rct.FingerPrint)
 	if err != nil {
 		return -1, err
 	}

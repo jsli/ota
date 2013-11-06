@@ -93,6 +93,8 @@ func GenerateOtaPackage(dal *models.Dal, task *models.ReleaseCreationTask, root_
 	release.ReleaseNote = "empty"
 	release.CreatedTs = time.Now().Unix()
 	release.ModifiedTs = release.CreatedTs
+	release.Model = update_request.Device.Model
+	release.Platform = update_request.Device.Platform
 	release.Md5, err = file.Md5SumFile(radio_ota_path)
 	if err != nil {
 		return nil, err
@@ -199,10 +201,10 @@ func GenerateTestUpdateRequest() (string, *models.UpdateRequest) {
 
 	hltd := models.CpRequest{}
 	hltd.Mode = "HLTD"
-	hltd.Version = "2.44.000"
+	hltd.Version = "2.51.000"
 	hltd_images := make(map[string]string)
-	hltd_images["ARBEL"] = "HL/HLTD/HLTD_CP_2.44.000/Seagull/HL_TD_CP.bin"
-	hltd_images["MSA"] = "HL/HLTD/HLTD_CP_2.44.000/HLTD_MSA_2.44.000/A0/HL_TD_M08_AI_A0_Flash.bin"
+	hltd_images["ARBEL"] = "HL/HLTD/HLTD_CP_2.51.000/Seagull/HL_TD_CP.bin"
+	hltd_images["MSA"] = "HL/HLTD/HLTD_CP_2.51.000/HLTD_MSA_2.51.000/A0/HL_TD_M08_AI_A0_Flash.bin"
 	//	hltd_images["ARBEL"] = "HL/HLTD/HLTD_CP_2.52.000/Seagull/HL_TD_CP.bin"
 	//	hltd_images["MSA"] = "HL/HLTD/HLTD_CP_2.52.000/HLTD_MSA_2.52.000/A0/HL_TD_M08_AI_A0_Flash.bin"
 	//	hltd_images["RFIC"] = "LWG/HL_CP_2.40.000/RFIC/1920_FF/Skylark_LWG.bin"
