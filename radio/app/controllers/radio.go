@@ -41,12 +41,16 @@ func (c Radio) OtaCreate() revel.Result {
 		return c.Redirect("/radio/maintain")
 	}
 
+	result := models.NewRadioOtaReleaseResult()
+
 	revel.INFO.Println("OtaCreate request: ", c.Request)
 	validator := &policy.RadioValidator{}
 	dtim_info, err := validator.ValidateAndParseRadioDtim(c.Params)
 	if err != nil {
 		revel.ERROR.Println("http.StatusBadRequest: ", err)
 		c.Response.Status = http.StatusBadRequest
+		result.Extra.ErrorCode = ota_constant.ERROR_CODE_DROPPED
+		result.Extra.ErrorMessage = err
 		return c.RenderJson(nil)
 	}
 
@@ -54,6 +58,7 @@ func (c Radio) OtaCreate() revel.Result {
 	if err != nil {
 		revel.ERROR.Println("http.StatusBadRequest: ", err)
 		c.Response.Status = http.StatusBadRequest
+		result.Extra.ErrorCode = ota_constant.ERROR_CODE_DROPPED
 		return c.RenderJson(nil)
 	}
 
@@ -61,6 +66,7 @@ func (c Radio) OtaCreate() revel.Result {
 	if err != nil {
 		revel.ERROR.Println("http.StatusInternalServerError: ", err)
 		c.Response.Status = http.StatusInternalServerError
+		result.Extra.ErrorCode = ota_constant.ERROR_CODE_DROPPED
 		return c.RenderJson(nil)
 	}
 	defer dal.Close()
@@ -70,36 +76,68 @@ func (c Radio) OtaCreate() revel.Result {
 	fp := policy.GenerateOtaPackageFingerPrint(sorted_image_list)
 	fp = fmt.Sprintf("%s.%s.%s", update_request.Device.Model, update_request.Device.Platform, fp)
 
-	result := models.NewRadioOtaReleaseResult()
 	radio, err := policy.ProvideRadioRelease(dal, dtim_info, result, fp)
 	if err != nil {
 		revel.ERROR.Println("http.StatusInternalServerError: ", err)
 		c.Response.Status = http.StatusInternalServerError
-		result.Extra.ErrorMessage = err
+		result.Extra.ErrorCode = ota_constant.ERROR_CODE_DROPPED
 		return c.RenderJson(result)
 	}
 
 	if radio == nil {
-		task := &models.ReleaseCreationTask{}
-		task.Flag = ota_constant.FLAG_INIT
-		task.UpdateRequest = request_json
-		task.Data = dtim_info.BinaryData
-		task.Model = update_request.Device.Model
-		task.Platform = update_request.Device.Platform
-		task.FingerPrint = fp
-		task.CreatedTs = time.Now().Unix()
-		task.ModifiedTs = task.CreatedTs
+		task, err := models.FindReleaseCreationTaskByFp(dal, fp)
+		if err != nil {
+			revel.ERROR.Println("FindReleaseCreationTaskByFp failed: ", err)
+		}
+		if task == nil {
+			task := &models.ReleaseCreationTask{}
+			task.Flag = ota_constant.FLAG_INIT
+			task.UpdateRequest = request_json
+			task.Data = dtim_info.BinaryData
+			task.Model = update_request.Device.Model
+			task.Platform = update_request.Device.Platform
+			task.FingerPrint = fp
+			task.CreatedTs = time.Now().Unix()
+			task.ModifiedTs = task.CreatedTs
 
-		id, err := task.Save(dal)
-		if id < 0 || err != nil {
-			revel.ERROR.Println("http.StatusInternalServerError: ", err)
-			result.Extra.ErrorMessage = "Duplicated creation task, wait"
+			id, err := task.Save(dal)
+			if id < 0 || err != nil {
+				revel.ERROR.Println("http.StatusInternalServerError: ", err)
+				result.Extra.ErrorCode = ota_constant.ERROR_CODE_CREATE_REQUEST_FAILED
+				result.Extra.ErrorMessage = "Create creation task Failed, try later"
+			} else {
+				revel.INFO.Println("OtaCreate request, create task: ", task.UpdateRequest)
+				result.Extra.ErrorCode = ota_constant.ERROR_CODE_NOT_CREATED
+				result.Extra.ErrorMessage = "Update package will be created later"
+			}
+			c.Response.Status = http.StatusNotFound
 		} else {
-			revel.INFO.Println("OtaCreate request, create task: ", task.UpdateRequest)
-			result.Extra.ErrorMessage = "Create creation task, try later"
+			switch task.Flag {
+			case ota_constant.FLAG_DISABLE:
+				fallthrough
+			case ota_constant.FLAG_DROPPED:
+				result.Extra.ErrorCode = ota_constant.ERROR_CODE_DROPPED
+				result.Extra.ErrorMessage = "Bad creation task, drop it"
+			case ota_constant.FLAG_AVAILABLE:
+				fallthrough
+			case ota_constant.FLAG_INIT:
+				result.Extra.ErrorCode = ota_constant.ERROR_CODE_NOT_CREATED
+				result.Extra.ErrorMessage = "Update package will be created later"
+			case ota_constant.FLAG_CREATING:
+				result.Extra.ErrorCode = ota_constant.ERROR_CODE_CREATING
+				result.Extra.ErrorMessage = "Update package is creating"
+			case ota_constant.FLAG_CREATED:
+				result.Extra.ErrorCode = ota_constant.ERROR_CODE_NOERR
+				result.Extra.ErrorMessage = nil
+			case ota_constant.FLAG_CREATE_FAILED:
+				result.Extra.ErrorCode = ota_constant.ERROR_CODE_CREATE_REQUEST_FAILED
+				result.Extra.ErrorMessage = "Update package created failed"
+			default:
+				result.Extra.ErrorCode = ota_constant.ERROR_CODE_NOERR
+				result.Extra.ErrorMessage = nil
+			}
 		}
 
-		c.Response.Status = http.StatusNotFound
 		return c.RenderJson(result)
 	} else {
 		revel.INFO.Println("OtaCreate, find release: ", radio)

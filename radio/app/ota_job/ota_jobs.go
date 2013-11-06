@@ -53,7 +53,7 @@ func (rcj *ReleaseCreationJob) Run() {
 				revel.INFO.Println(tag, "Failed, task id= ", task.Id, " retry: ", task.RetryCount)
 			}
 			task.ModifiedTs = time.Now().Unix()
-			_, uerr = task.Update(dal)
+			_, uerr := task.Update(dal)
 			revel.ERROR.Println(tag, " task UPDATE Failed: ", uerr)
 			return
 		}
