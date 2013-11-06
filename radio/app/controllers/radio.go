@@ -110,7 +110,6 @@ func (c Radio) OtaCreate() revel.Result {
 				result.Extra.ErrorCode = ota_constant.ERROR_CODE_NOT_CREATED
 				result.Extra.ErrorMessage = "Update package will be created later"
 			}
-			c.Response.Status = http.StatusNotFound
 		} else {
 			switch task.Flag {
 			case ota_constant.FLAG_DISABLE:
@@ -138,6 +137,7 @@ func (c Radio) OtaCreate() revel.Result {
 			}
 		}
 
+		c.Response.Status = http.StatusNotFound
 		return c.RenderJson(result)
 	} else {
 		revel.INFO.Println("OtaCreate, find release: ", radio)
