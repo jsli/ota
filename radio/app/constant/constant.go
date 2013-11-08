@@ -47,10 +47,10 @@ const (
 const (
 	ID_ARBI = "ARBI"
 	ID_GRBI = "GRBI"
-	ID_RFIC = "RFIC"
+	ID_RFIC = "RFBI"
 	ID_ARB2 = "ARB2"
 	ID_GRB2 = "GRB2"
-	ID_RFI2 = "RFI2"
+	ID_RFI2 = "RFB2"
 
 	KEY_ARBEL            = "ARBEL"
 	KEY_MSA              = "MSA"
