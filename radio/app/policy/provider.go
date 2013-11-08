@@ -86,10 +86,8 @@ func filterByRuleFile(data map[string]map[string][]string, cp_info *CpInfo) {
 				if check(path, filter) {
 					filtered = append(filtered, path)
 				} else {
-//					fmt.Println("Drop " + path)
 				}
 			}
-//			fmt.Printf("filtered %s", filtered)
 			original_data[key] = filtered
 		}
 	}
@@ -261,6 +259,7 @@ func getCpList(dal *release.Dal, cp_info *CpInfo) ([]*release.CpRelease, error) 
 
 	query := fmt.Sprintf("SELECT * FROM %s WHERE mode='%s' AND prefix='%s' AND sim='%s' AND flag=%d AND version_scalar > %d ORDER BY version_scalar DESC",
 		cp_constant.TABLE_CP, mode, prefix, sim, cp_constant.AVAILABLE_FLAG, version_scalar)
+	fmt.Println(query)
 	list, err := doGetCpList(dal, query)
 	if err != nil {
 		return nil, err
@@ -269,6 +268,7 @@ func getCpList(dal *release.Dal, cp_info *CpInfo) ([]*release.CpRelease, error) 
 
 	query = fmt.Sprintf("SELECT * FROM %s WHERE mode='%s' AND prefix='%s' AND sim='%s' AND flag=%d AND version_scalar < %d ORDER BY version_scalar DESC LIMIT 5",
 		cp_constant.TABLE_CP, mode, prefix, sim, cp_constant.AVAILABLE_FLAG, version_scalar)
+	fmt.Println(query)
 	list, err = doGetCpList(dal, query)
 	if err != nil {
 		return nil, err

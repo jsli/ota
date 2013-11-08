@@ -153,7 +153,7 @@ func ParseDtimWithFile(path string) ([]byte, [][]string, error) {
 }
 
 func ParseDtimWithByte(dtim_byte []byte) ([][]string, error) {
-	data := make([][]string, 4)
+	data := make([][]string, 10)
 
 	if len(dtim_byte) > 1024 {
 		dtim_byte = dtim_byte[3072:]
@@ -168,7 +168,7 @@ func ParseDtimWithByte(dtim_byte []byte) ([][]string, error) {
 	counter := 0
 	for index, image := range image_list {
 		if ValidateImageId(image[:4]) == nil {
-			data[index] = make([]string, 0, 4)
+			data[index] = make([]string, 0, 10)
 			counter += counter
 			attrs := strings.Split(image, "|")
 			for _, attr := range attrs {
