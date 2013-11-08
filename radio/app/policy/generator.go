@@ -53,6 +53,7 @@ func GenerateOtaPackage(dal *models.Dal, task *models.ReleaseCreationTask, root_
 
 	err = gzipCpImage(image_list_final)
 	if err != nil {
+		revel.INFO.Printf("zip image error : %s\n", err)
 		return nil, err
 	}
 	for _, image_path := range image_list_final {
@@ -87,9 +88,7 @@ func GenerateOtaPackage(dal *models.Dal, task *models.ReleaseCreationTask, root_
 	//6.insert db
 	release := &models.RadioOtaRelease{}
 	release.Flag = ota_constant.FLAG_AVAILABLE
-	fp := GenerateOtaPackageFingerPrint(image_list)
-	fp = fmt.Sprintf("%s.%s.%s", update_request.Device.Model, update_request.Device.Platform, fp)
-	release.FingerPrint = fp
+	release.FingerPrint = task.FingerPrint
 	release.ReleaseNote = "empty"
 	release.CreatedTs = time.Now().Unix()
 	release.ModifiedTs = release.CreatedTs
@@ -193,33 +192,37 @@ func GenerateTestUpdateRequest() (string, *models.UpdateRequest) {
 	update_request := &models.UpdateRequest{}
 
 	device_info := models.DeviceInfo{}
-	device_info.Model = "PXA1088_DKB"
+	device_info.Model = "PXA1920_FF_V10"
 	device_info.Platform = "4.3"
 	update_request.Device = device_info
 
 	cps := make([]models.CpRequest, 0, 2)
 
 	hltd := models.CpRequest{}
-	hltd.Mode = "HLTD"
-	hltd.Version = "2.51.000"
+	hltd.Mode = "LWG"
+	hltd.Version = "2.40.000"
 	hltd_images := make(map[string]string)
-	hltd_images["ARBEL"] = "HL/HLTD/HLTD_CP_2.51.000/Seagull/HL_TD_CP.bin"
-	hltd_images["MSA"] = "HL/HLTD/HLTD_CP_2.51.000/HLTD_MSA_2.51.000/A0/HL_TD_M08_AI_A0_Flash.bin"
-	//	hltd_images["ARBEL"] = "HL/HLTD/HLTD_CP_2.52.000/Seagull/HL_TD_CP.bin"
-	//	hltd_images["MSA"] = "HL/HLTD/HLTD_CP_2.52.000/HLTD_MSA_2.52.000/A0/HL_TD_M08_AI_A0_Flash.bin"
-	//	hltd_images["RFIC"] = "LWG/HL_CP_2.40.000/RFIC/1920_FF/Skylark_LWG.bin"
+	//	hltd_images["ARBEL"] = "LTE/LWG/HL_CP_2.42.001/HL_CP/Seagull/HL_LWG_DKB.bin"
+	//	hltd_images["MSA"] = "LTE/LWG/HL_CP_2.42.001/HL_MSA_2.42.001/HL_LWG_M09_B0_SKL_Flash.bin"
+	//	hltd_images["RFIC"] = "LTE/LWG/HL_CP_2.42.001/RFIC/1920_FF/Skylark_LWG.bin"
+	hltd_images["ARBEL"] = "LTE/LWG/HL_CP_2.41.000/HL_CP/Seagull/HL_LWG_DKB.bin"
+	hltd_images["MSA"] = "LTE/LWG/HL_CP_2.41.000/HL_MSA_2.41.000/HL_LWG_M09_B0_SKL_Flash.bin"
+	hltd_images["RFIC"] = "LTE/LWG/HL_CP_2.41.000/RFIC/1920_FF/Skylark_LWG.bin"
 	hltd.Images = hltd_images
 	cps = append(cps, hltd)
 
-	//	hltd_dsds := models.CpRequest{}
-	//	hltd_dsds.Mode = "HLTD_DSDS"
-	//	hltd_dsds.Version = "3.36.000"
-	//	hltd_dsds_images := make(map[string]string)
-	//	hltd_dsds_images["ARBEL"] = "HLTD_DSDS/HLTD_DSDS_CP_3.36.000/Seagull_DSDS/HL_TD_DSDS_CP.bin"
-	//	hltd_dsds_images["MSA"] = "HLTD_DSDS/HLTD_DSDS_CP_3.36.000/HLTD_DSDS_MSA_3.36.000/A0/HL_TD_M08_AI_A0_DSDS_Flash.bin"
-	//	hltd_dsds_images["RFIC"] = "LTG/HL_CP_3.40.000/RFIC/1920_FF/Skylark_LTG.bin"
-	//	hltd_dsds.Images = hltd_dsds_images
-	//	cps = append(cps, hltd_dsds)
+	hltd_dsds := models.CpRequest{}
+	hltd_dsds.Mode = "LTG"
+	hltd_dsds.Version = "3.40.000"
+	hltd_dsds_images := make(map[string]string)
+	//	hltd_dsds_images["ARBEL"] = "LTE/LTG/HL_CP_3.42.001/HL_CP/Seagull/HL_LTG_DL.bin"
+	//	hltd_dsds_images["MSA"] = "LTE/LTG/HL_CP_3.42.001/HL_MSA_3.42.002/HL_DL_M09_Y0_AI_SKL_Flash.bin"
+	//	hltd_dsds_images["RFIC"] = "LTE/LTG/HL_CP_3.42.001/RFIC/1920_FF/Skylark_LTG.bin"
+	hltd_dsds_images["ARBEL"] = "LTE/LTG/HL_CP_3.41.000/HL_CP/Seagull/HL_LTG_DL.bin"
+	hltd_dsds_images["MSA"] = "LTE/LTG/HL_CP_3.41.000/HL_MSA_3.41.000/HL_DL_M09_Y0_AI_SKL_Flash.bin"
+	hltd_dsds_images["RFIC"] = "LTE/LTG/HL_CP_3.41.000/RFIC/1920_FF/Skylark_LTG.bin"
+	hltd_dsds.Images = hltd_dsds_images
+	cps = append(cps, hltd_dsds)
 
 	update_request.Cps = cps
 

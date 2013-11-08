@@ -45,7 +45,7 @@ func (rcj *ReleaseCreationJob) Run() {
 		if err != nil {
 			revel.ERROR.Println(tag, "Failed: ", err)
 			revel.INFO.Println(tag, "Failed, task id= ", task.Id, " error msg: ", err)
-			if task.RetryCount >= 5 {
+			if task.RetryCount >= ota_constant.RETRY_COUNT {
 				task.Flag = ota_constant.FLAG_DROPPED
 			} else {
 				task.RetryCount = task.RetryCount + 1
