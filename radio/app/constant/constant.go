@@ -100,6 +100,8 @@ const (
 	ERROR_CODE_CREATING              = 8
 	ERROR_CODE_CREATE_FAILED         = 32
 	ERROR_CODE_CREATE_REQUEST_FAILED = 64
+
+	RETRY_COUNT = 5
 )
 
 const (

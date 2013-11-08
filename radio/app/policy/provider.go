@@ -8,13 +8,14 @@ import (
 	"github.com/jsli/gtbox/file"
 	ota_constant "github.com/jsli/ota/radio/app/constant"
 	"github.com/jsli/ota/radio/app/models"
+	"github.com/robfig/revel"
 	"strings"
 )
 
 func ProvideRadioRelease(dal *models.Dal, dtim_info *DtimInfo, result *models.RadioOtaReleaseResult, fp string) (*models.RadioOtaRelease, error) {
 	query := fmt.Sprintf("SELECT * FROM %s WHERE fingerprint='%s' AND flag=%d LIMIT 1",
-		ota_constant.TABLE_RADIO_OTA_RELEASE, fp, cp_constant.AVAILABLE_FLAG)
-	//	fmt.Println(query)
+		ota_constant.TABLE_RADIO_OTA_RELEASE, fp, ota_constant.FLAG_AVAILABLE)
+	revel.INFO.Println("query radio ota release: ", query)
 	release, err := models.FindRadioOtaRelease(dal, query)
 	if err != nil {
 		return nil, err
