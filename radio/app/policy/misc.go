@@ -37,7 +37,7 @@ func ConvertModel(model string) string {
 	if strings.Contains(model, ota_constant.TAG_1088) ||
 		strings.Contains(model, ota_constant.TAG_1T88) {
 		model = ota_constant.MODEL_1088
-	} else if strings.Contains(model, ota_constant.TAG_1L88) {
+	} else if strings.Contains(model, ota_constant.TAG_1920) {
 		model = ota_constant.MODEL_1920
 	}
 	return model

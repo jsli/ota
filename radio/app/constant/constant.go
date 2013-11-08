@@ -67,9 +67,9 @@ const (
 
 	TAG_1088   = "1088"
 	TAG_1T88   = "1T88"
-	TAG_1L88   = "1L88"
+	TAG_1920   = "1920"
 	MODEL_1088 = "PXA1088"
-	MODEL_1920 = "PXA1L88"
+	MODEL_1920 = "PXA1920"
 
 	TAG_JB_4_2      = "4.2"
 	TAG_JB_4_3      = "4.3"
