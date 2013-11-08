@@ -134,7 +134,8 @@ func getCpAndImages(dal *release.Dal, cp_info *CpInfo, hasRFIC bool) (map[string
 		for _, cp := range cp_list {
 			image_list, err := getImagesByCp(dal, cp, hasRFIC)
 			if err != nil {
-				return nil, err
+				//return nil, err
+				continue
 			}
 			data[cp.Version] = image_list
 		}
