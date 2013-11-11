@@ -7,6 +7,7 @@ import (
 	"github.com/jsli/ota/radio/app/models"
 	"github.com/jsli/ota/radio/app/policy"
 	"github.com/robfig/revel"
+	"github.com/robfig/revel/cache"
 	"net/http"
 	"time"
 )
@@ -41,9 +42,9 @@ func (c Radio) OtaCreate() revel.Result {
 		return c.Redirect("/radio/maintain")
 	}
 
+	revel.INFO.Println("OtaCreate request: ", c.Request)
 	result := models.NewRadioOtaReleaseResult()
 
-	revel.INFO.Println("OtaCreate request: ", c.Request)
 	validator := &policy.RadioValidator{}
 	dtim_info, err := validator.ValidateAndParseRadioDtim(c.Params)
 	if err != nil {
@@ -75,6 +76,10 @@ func (c Radio) OtaCreate() revel.Result {
 	sorted_image_list := policy.GenerateImageList(update_request)
 	fp := policy.GenerateOtaPackageFingerPrint(sorted_image_list)
 	fp = fmt.Sprintf("%s.%s.%s", update_request.Device.Model, update_request.Device.Platform, fp)
+
+	if err := cache.Get(fp, &result); err == nil {
+		return c.RenderJson(result)
+	}
 
 	radio, err := policy.ProvideRadioRelease(dal, dtim_info, result, fp)
 	if err != nil {
@@ -145,6 +150,8 @@ func (c Radio) OtaCreate() revel.Result {
 		result.Data.Md5 = radio.Md5
 		result.Data.Size = radio.Size
 		result.Data.CreatedTime = policy.FormatTime(radio.CreatedTs)
+
+		cache.Set(fp, result, 60*time.Second)
 	}
 
 	return c.RenderJson(result)
@@ -172,6 +179,11 @@ func (c Radio) Query() revel.Result {
 	}
 	defer dal.Close()
 
+	var result_cached models.QueryResult
+	if err := cache.Get(dtim_info.MD5Dtim, &result_cached); err == nil {
+		return c.RenderJson(result_cached)
+	}
+
 	result := models.NewQueryResult()
 	err = policy.ProvideQueryData(dal, dtim_info, result)
 	if err != nil {
@@ -187,5 +199,6 @@ func (c Radio) Query() revel.Result {
 	}
 
 	revel.INFO.Println("Query request, result: ", result)
+	cache.Set(dtim_info.MD5Dtim, result, 60*time.Second)
 	return c.RenderJson(result)
 }

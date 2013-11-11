@@ -28,16 +28,15 @@ func ProvideRadioRelease(dal *models.Dal, dtim_info *DtimInfo, result *models.Ra
 }
 
 func ProvideQueryData(dal *release.Dal, dtim_info *DtimInfo, result *models.QueryResult) error {
-	//	result.Data = make(map[string]interface{})
-	current := make(map[string]interface{})
-	available := make(map[string]interface{})
+	current := models.CurrentCps{}
+	available := models.AvailableCps{}
 	for _, cp_info := range dtim_info.CpMap {
-		image_list := getCurrentInfo(cp_info)
-		if len(image_list) > 0 {
-			current_detail := make(map[string]interface{})
-			current_detail[ota_constant.KEY_VERSION] = cp_info.Version
-			current_detail[ota_constant.KEY_IMAGES] = image_list
-			current[cp_info.Mode] = current_detail
+		images := getCurrentCpImages(cp_info)
+		if len(images) > 0 {
+			ccc := models.CurrentCpComponent{}
+			ccc.Version = cp_info.Version
+			ccc.Images = images
+			current[cp_info.Mode] = ccc
 		}
 
 		data, err := getCpAndImages(dal, cp_info, dtim_info.HasRFIC)
@@ -54,8 +53,8 @@ func ProvideQueryData(dal *release.Dal, dtim_info *DtimInfo, result *models.Quer
 	return nil
 }
 
-func getCurrentInfo(cp_info *CpInfo) map[string]string {
-	data := make(map[string]string)
+func getCurrentCpImages(cp_info *CpInfo) models.Images {
+	data := models.Images{}
 	for key, value := range cp_info.ImageMap {
 		switch key {
 		case ota_constant.ID_ARBI, ota_constant.ID_ARB2:
@@ -69,10 +68,10 @@ func getCurrentInfo(cp_info *CpInfo) map[string]string {
 	return data
 }
 
-func filterByParams(data map[string]map[string][]string, dtim_info *DtimInfo) {
+func filterByParams(data models.AvailableCpComponent, dtim_info *DtimInfo) {
 }
 
-func filterByRuleFile(data map[string]map[string][]string, cp_info *CpInfo) {
+func filterByRuleFile(data models.AvailableCpComponent, cp_info *CpInfo) {
 	filter_map := make(map[string][]string)
 	for _, key := range ota_constant.KEY_LIST {
 		filter_map[key] = getFilterList(cp_info.Mode, key)
@@ -114,41 +113,28 @@ func check(str string, filter []string) bool {
 	return true
 }
 
-/*
- * return:
- * map[string]map[string][]string : map[CP_VERSION] map[IMAGE_KEY] images list
- * @IMAGE_ID refer to
- *	KEY_ARBEL = "ARBEL"
- *	KEY_MSA = "MSA"
- *	KEY_RFIC = "RFIC"
- */
-func getCpAndImages(dal *release.Dal, cp_info *CpInfo, hasRFIC bool) (map[string]map[string][]string, error) {
+func getCpAndImages(dal *release.Dal, cp_info *CpInfo, hasRFIC bool) (models.AvailableCpComponent, error) {
 	cp_list, err := getCpList(dal, cp_info)
 	if err != nil {
 		return nil, err
 	}
 
 	if cp_list != nil {
-		data := make(map[string]map[string][]string)
+		data := models.AvailableCpComponent{}
 		for _, cp := range cp_list {
-			image_list, err := getImagesByCp(dal, cp, hasRFIC)
+			images_list, err := getImagesByCp(dal, cp, hasRFIC)
 			if err != nil {
-				//return nil, err
 				continue
 			}
-			data[cp.Version] = image_list
+			data[cp.Version] = images_list
 		}
 		return data, nil
 	}
 	return nil, nil
 }
 
-/*
- * return:
- * map[string][]string : map[CP_VERSION] images list
- */
-func getImagesByCp(dal *release.Dal, cp *release.CpRelease, hasRFIC bool) (map[string][]string, error) {
-	data := make(map[string][]string)
+func getImagesByCp(dal *release.Dal, cp *release.CpRelease, hasRFIC bool) (models.ImagesList, error) {
+	data := models.ImagesList{}
 
 	arbi_list, err := getArbiList(dal, cp)
 	if err != nil {
@@ -260,7 +246,7 @@ func getCpList(dal *release.Dal, cp_info *CpInfo) ([]*release.CpRelease, error) 
 
 	query := fmt.Sprintf("SELECT * FROM %s WHERE mode='%s' AND prefix='%s' AND sim='%s' AND flag=%d AND version_scalar > %d ORDER BY version_scalar DESC",
 		cp_constant.TABLE_CP, mode, prefix, sim, cp_constant.AVAILABLE_FLAG, version_scalar)
-	fmt.Println(query)
+	revel.INFO.Println("query higher cp: ", query)
 	list, err := doGetCpList(dal, query)
 	if err != nil {
 		return nil, err
@@ -269,7 +255,7 @@ func getCpList(dal *release.Dal, cp_info *CpInfo) ([]*release.CpRelease, error) 
 
 	query = fmt.Sprintf("SELECT * FROM %s WHERE mode='%s' AND prefix='%s' AND sim='%s' AND flag=%d AND version_scalar < %d ORDER BY version_scalar DESC LIMIT 5",
 		cp_constant.TABLE_CP, mode, prefix, sim, cp_constant.AVAILABLE_FLAG, version_scalar)
-	fmt.Println(query)
+	revel.INFO.Println("query lower 5 cp: ", query)
 	list, err = doGetCpList(dal, query)
 	if err != nil {
 		return nil, err

@@ -116,6 +116,7 @@ func ParseDtim(reader io.Reader) (*DtimInfo, error) {
 		return nil, fmt.Errorf("Illegal cp information, image count must be 2 or 4, NOT %d", count)
 	}
 
+	dtim_info.MD5Dtim = Md5Dtim(binary_data)
 	return dtim_info, nil
 }
 
