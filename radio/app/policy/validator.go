@@ -64,6 +64,7 @@ type DtimInfo struct {
 	HasRFIC    bool
 	CpMap      map[string]*CpInfo
 	BinaryData []byte
+	MD5Dtim    string
 }
 
 type Validator interface {

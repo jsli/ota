@@ -64,7 +64,6 @@ func GenerateOtaPackage(dal *models.Dal, task *models.ReleaseCreationTask, root_
 	if err != nil {
 		return nil, err
 	}
-	//	file.CopyFile("/home/manson/desktop/radio.img", radio_image_path)
 	_, err = file.CopyFile(radio_image_path, fmt.Sprintf("%s%s", zip_path, ota_constant.RADIO_IMAGE_NAME))
 
 	//	4. archive all files

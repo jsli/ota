@@ -1,6 +1,8 @@
 package policy
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	"fmt"
 	"github.com/jsli/gtbox/file"
 	"github.com/jsli/gtbox/pathutil"
@@ -25,6 +27,13 @@ func RecordMd5(path, txt_path string) error {
 		}
 	}
 	return nil
+}
+
+func Md5Dtim(dtim []byte) string {
+	md5h := md5.New()
+	md5h.Write(dtim)
+	md5_str := hex.EncodeToString(md5h.Sum(nil))
+	return md5_str
 }
 
 func FormatTime(time_unix int64) string {
