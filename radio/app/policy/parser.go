@@ -168,6 +168,9 @@ func ParseDtimWithByte(dtim_byte []byte) ([][]string, error) {
 
 	counter := 0
 	for index, image := range image_list {
+		if len(image) < 4 {
+			continue
+		}
 		if ValidateImageId(image[:4]) == nil {
 			data[index] = make([]string, 0, 10)
 			counter += counter
