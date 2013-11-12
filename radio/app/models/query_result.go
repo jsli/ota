@@ -41,8 +41,8 @@ HLTD: {
 }
  *******************************/
 type CurrentCpComponent struct {
-	Version string
-	Images  Images
+	Version string `json:"version"`
+	Images  Images `json:"images"`
 }
 
 /* mode as key */
