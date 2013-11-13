@@ -163,6 +163,10 @@ func (rct *ReleaseCreationTask) Update(dal *Dal) (int64, error) {
 	return id, err
 }
 
+func (rct *ReleaseCreationTask) Delete(dal *Dal) (int64, error) {
+	return DeleteReleaseCreationTaskFp(dal, rct.FingerPrint)
+}
+
 func PopOneCreationTask(dal *Dal) (*ReleaseCreationTask, error) {
 	query := fmt.Sprintf("SELECT * FROM %s WHERE flag=%d ORDER BY id ASC LIMIT 1",
 		ota_constant.TABLE_RELEASE_CREATION_TASK, ota_constant.FLAG_INIT)
@@ -187,6 +191,11 @@ func FindReleaseCreationTask(dal *Dal, query string) (*ReleaseCreationTask, erro
 	}
 
 	return &rct, nil
+}
+
+func DeleteReleaseCreationTaskFp(dal *Dal, fingerprint string) (int64, error) {
+	delete_sql := fmt.Sprintf("DELETE FROM %s where fingerprint='%s'", ota_constant.TABLE_RELEASE_CREATION_TASK, fingerprint)
+	return DeleteReleaseCreationTask(dal, delete_sql)
 }
 
 func DeleteReleaseCreationTask(dal *Dal, delete_sql string) (int64, error) {
