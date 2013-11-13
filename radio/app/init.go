@@ -22,7 +22,10 @@ func init() {
 	}
 
 	revel.OnAppStart(func() {
-		job := ota_job.ReleaseCreationJob{}
-		jobs.Schedule("@every 15s", &job)
+		createion_job := ota_job.ReleaseCreationJob{}
+		jobs.Schedule("@every 15s", &createion_job)
+
+		remove_job := ota_job.ReleaseRemoveJob{}
+		jobs.Schedule("@every 60s", &remove_job)
 	})
 }

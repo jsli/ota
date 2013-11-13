@@ -103,6 +103,7 @@ func GenerateOtaPackage(dal *models.Dal, task *models.ReleaseCreationTask, root_
 	}
 
 	release.Delete(dal)
+	file.DeleteDir(fmt.Sprintf("%s%s", ota_constant.RADIO_OTA_RELEASE_ROOT, release.FingerPrint))
 	id, err := release.Save(dal)
 	if id < 0 || err != nil {
 		return nil, err
@@ -199,11 +200,8 @@ func GenerateTestUpdateRequest() (string, *models.UpdateRequest) {
 
 	hltd := models.CpRequest{}
 	hltd.Mode = "LWG"
-	hltd.Version = "2.40.000"
+	hltd.Version = "2.41.000"
 	hltd_images := make(map[string]string)
-	//	hltd_images["ARBEL"] = "LTE/LWG/HL_CP_2.42.001/HL_CP/Seagull/HL_LWG_DKB.bin"
-	//	hltd_images["MSA"] = "LTE/LWG/HL_CP_2.42.001/HL_MSA_2.42.001/HL_LWG_M09_B0_SKL_Flash.bin"
-	//	hltd_images["RFIC"] = "LTE/LWG/HL_CP_2.42.001/RFIC/1920_FF/Skylark_LWG.bin"
 	hltd_images["ARBEL"] = "LTE/LWG/HL_CP_2.41.000/HL_CP/Seagull/HL_LWG_DKB.bin"
 	hltd_images["MSA"] = "LTE/LWG/HL_CP_2.41.000/HL_MSA_2.41.000/HL_LWG_M09_B0_SKL_Flash.bin"
 	hltd_images["RFIC"] = "LTE/LWG/HL_CP_2.41.000/RFIC/1920_FF/Skylark_LWG.bin"
@@ -212,11 +210,8 @@ func GenerateTestUpdateRequest() (string, *models.UpdateRequest) {
 
 	hltd_dsds := models.CpRequest{}
 	hltd_dsds.Mode = "LTG"
-	hltd_dsds.Version = "3.40.000"
+	hltd_dsds.Version = "3.41.000"
 	hltd_dsds_images := make(map[string]string)
-	//	hltd_dsds_images["ARBEL"] = "LTE/LTG/HL_CP_3.42.001/HL_CP/Seagull/HL_LTG_DL.bin"
-	//	hltd_dsds_images["MSA"] = "LTE/LTG/HL_CP_3.42.001/HL_MSA_3.42.002/HL_DL_M09_Y0_AI_SKL_Flash.bin"
-	//	hltd_dsds_images["RFIC"] = "LTE/LTG/HL_CP_3.42.001/RFIC/1920_FF/Skylark_LTG.bin"
 	hltd_dsds_images["ARBEL"] = "LTE/LTG/HL_CP_3.41.000/HL_CP/Seagull/HL_LTG_DL.bin"
 	hltd_dsds_images["MSA"] = "LTE/LTG/HL_CP_3.41.000/HL_MSA_3.41.000/HL_DL_M09_Y0_AI_SKL_Flash.bin"
 	hltd_dsds_images["RFIC"] = "LTE/LTG/HL_CP_3.41.000/RFIC/1920_FF/Skylark_LTG.bin"
