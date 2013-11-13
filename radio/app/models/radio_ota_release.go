@@ -45,6 +45,38 @@ func (ror *RadioOtaRelease) Delete(dal *Dal) (int64, error) {
 	return DeleteRadioReleaseByFp(dal, ror.FingerPrint)
 }
 
+func FindRadioOtaReleaseByFp(dal *Dal, fp string) (*RadioOtaRelease, error) {
+	query := fmt.Sprintf("SELECT * FROM %s WHERE fingerprint='%s' LIMIT 1",
+		ota_constant.TABLE_RADIO_OTA_RELEASE, fp)
+	return FindRadioOtaRelease(dal, query)
+}
+
+func FindRadioOtaReleaseList(dal *Dal, flag int) ([]*RadioOtaRelease, error) {
+	query := fmt.Sprintf("SELECT * FROM %s WHERE flag=%d",
+		ota_constant.TABLE_RADIO_OTA_RELEASE, flag)
+	rows, err := dal.DB.Query(query)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+	defer rows.Close()
+
+	rors := make([]*RadioOtaRelease, 0, 100)
+	for rows.Next() {
+		ror := RadioOtaRelease{}
+		err := rows.Scan(&ror.Id, &ror.Model, &ror.Platform, &ror.FingerPrint, &ror.Md5, &ror.Size,
+			&ror.Flag, &ror.ReleaseNote, &ror.ModifiedTs, &ror.CreatedTs)
+
+		if err != nil || ror.Id < 0 {
+			continue
+		}
+		rors = append(rors, &ror)
+	}
+	return rors, nil
+}
+
 func FindRadioOtaRelease(dal *Dal, query string) (*RadioOtaRelease, error) {
 	row := dal.DB.QueryRow(query)
 	ror := RadioOtaRelease{}
@@ -155,4 +187,19 @@ func FindReleaseCreationTask(dal *Dal, query string) (*ReleaseCreationTask, erro
 	}
 
 	return &rct, nil
+}
+
+func DeleteReleaseCreationTask(dal *Dal, delete_sql string) (int64, error) {
+	stmt, err := dal.DB.Prepare(delete_sql)
+
+	if err != nil {
+		return -1, err
+	}
+	res, err := stmt.Exec()
+	if err != nil {
+		return -1, err
+	}
+
+	id, err := res.LastInsertId()
+	return id, err
 }
