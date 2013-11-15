@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/jsli/cp_release/release"
 	ota_constant "github.com/jsli/ota/radio/app/constant"
@@ -55,7 +56,7 @@ func (c Radio) OtaCreate() revel.Result {
 		return c.RenderJson(result)
 	}
 
-	update_request, request_json, err := validator.ValidateUpdateRequest(c.Params)
+	update_request, err := validator.ValidateUpdateRequest(c.Params)
 	if err != nil {
 		revel.ERROR.Println("http.StatusBadRequest: ", err)
 		c.Response.Status = http.StatusBadRequest
@@ -73,6 +74,17 @@ func (c Radio) OtaCreate() revel.Result {
 		return c.RenderJson(result)
 	}
 
+	update_request.Cps = policy.SortCps(update_request)
+	request_json_byte, err := json.Marshal(update_request)
+	if err != nil {
+		revel.ERROR.Println("http.StatusBadRequest: ", err)
+		c.Response.Status = http.StatusBadRequest
+		result.Extra.ErrorCode = ota_constant.ERROR_CODE_DROPPED
+		result.Extra.ErrorMessage = fmt.Sprintf("%s", err)
+		return c.RenderJson(result)
+	}
+	request_json := string(request_json_byte)
+
 	dal, err := models.NewDal()
 	if err != nil {
 		revel.ERROR.Println("http.StatusInternalServerError: ", err)
@@ -82,7 +94,6 @@ func (c Radio) OtaCreate() revel.Result {
 	}
 	defer dal.Close()
 
-	update_request.Cps = policy.SortCps(update_request)
 	sorted_image_list := policy.GenerateImageList(update_request)
 	fp := policy.GenerateOtaPackageFingerPrint(sorted_image_list)
 	fp = fmt.Sprintf("%s.%s.%s", update_request.Device.Model, update_request.Device.Platform, fp)
