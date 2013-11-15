@@ -75,19 +75,19 @@ type Validator interface {
 type RadioValidator struct {
 }
 
-func (v *RadioValidator) ValidateUpdateRequest(params *revel.Params) (*models.UpdateRequest, string, error) {
+func (v *RadioValidator) ValidateUpdateRequest(params *revel.Params) (*models.UpdateRequest, error) {
 	var request_str string = ""
 	params.Bind(&request_str, "request")
 	if request_str == "" {
-		return nil, request_str, fmt.Errorf("Illegal param [request]!")
+		return nil, fmt.Errorf("Illegal param [request]!")
 	}
 
 	request_str, err := url.QueryUnescape(request_str)
 	if err != nil {
-		return nil, "", fmt.Errorf("Illegal format [request] : %s", err)
+		return nil, fmt.Errorf("Illegal format [request] : %s", err)
 	}
 	request, err := ParseRequest(request_str)
-	return request, request_str, err
+	return request, err
 }
 
 func (v *RadioValidator) ValidateAndParseRadioDtim(params *revel.Params) (*DtimInfo, error) {
