@@ -51,8 +51,8 @@ func (c Radio) OtaCreate() revel.Result {
 		revel.ERROR.Println("http.StatusBadRequest: ", err)
 		c.Response.Status = http.StatusBadRequest
 		result.Extra.ErrorCode = ota_constant.ERROR_CODE_DROPPED
-		result.Extra.ErrorMessage = err
-		return c.RenderJson(nil)
+		result.Extra.ErrorMessage = fmt.Sprintf("%s", err)
+		return c.RenderJson(result)
 	}
 
 	update_request, request_json, err := validator.ValidateUpdateRequest(c.Params)
@@ -60,7 +60,17 @@ func (c Radio) OtaCreate() revel.Result {
 		revel.ERROR.Println("http.StatusBadRequest: ", err)
 		c.Response.Status = http.StatusBadRequest
 		result.Extra.ErrorCode = ota_constant.ERROR_CODE_DROPPED
-		return c.RenderJson(nil)
+		result.Extra.ErrorMessage = fmt.Sprintf("%s", err)
+		return c.RenderJson(result)
+	}
+
+	err = validator.CompareRequestAndDtim(update_request, dtim_info)
+	if err != nil {
+		revel.ERROR.Println("http.StatusBadRequest: ", err)
+		c.Response.Status = http.StatusBadRequest
+		result.Extra.ErrorCode = ota_constant.ERROR_CODE_DROPPED
+		result.Extra.ErrorMessage = fmt.Sprintf("%s", err)
+		return c.RenderJson(result)
 	}
 
 	dal, err := models.NewDal()
@@ -68,7 +78,7 @@ func (c Radio) OtaCreate() revel.Result {
 		revel.ERROR.Println("http.StatusInternalServerError: ", err)
 		c.Response.Status = http.StatusInternalServerError
 		result.Extra.ErrorCode = ota_constant.ERROR_CODE_DROPPED
-		return c.RenderJson(nil)
+		return c.RenderJson(result)
 	}
 	defer dal.Close()
 

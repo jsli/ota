@@ -105,6 +105,72 @@ func (v *RadioValidator) ValidateAndParseRadioDtim(params *revel.Params) (*DtimI
 	return ParseDtim(input)
 }
 
+func (v *RadioValidator) CompareRequestAndDtim(request *models.UpdateRequest, dtim_info *DtimInfo) error {
+	request_cps_arr := request.Cps
+	dtim_cps_map := dtim_info.CpMap
+
+	request_cp_len := len(request_cps_arr)
+	dtim_cp_len := len(dtim_cps_map)
+	if request_cp_len == 0 {
+		return fmt.Errorf("None CP request")
+	}
+
+	if request_cp_len == dtim_cp_len {
+		return nil
+	}
+
+	for mode, dtim_cp := range dtim_cps_map {
+		found := false
+		for _, request_cp := range request_cps_arr {
+			if mode == request_cp.Mode {
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			request := models.CpRequest{}
+			request.Mode = mode
+			request.Version = dtim_cp.Version
+			images := make(map[string]string)
+
+			if arbi, ok := dtim_cp.ImageMap[ota_constant.ID_ARBI]; ok {
+				images[ota_constant.KEY_ARBEL] = arbi.Path
+			} else if arbi, ok := dtim_cp.ImageMap[ota_constant.ID_ARB2]; ok {
+				images[ota_constant.KEY_ARBEL] = arbi.Path
+			} else {
+				return fmt.Errorf("dtim and request unmatch!!!")
+			}
+
+			if grbi, ok := dtim_cp.ImageMap[ota_constant.ID_GRBI]; ok {
+				images[ota_constant.KEY_MSA] = grbi.Path
+			} else if grbi, ok := dtim_cp.ImageMap[ota_constant.ID_GRB2]; ok {
+				images[ota_constant.KEY_MSA] = grbi.Path
+			} else {
+				return fmt.Errorf("dtim and request unmatch!!!")
+			}
+
+			if dtim_info.HasRFIC {
+				if rfic, ok := dtim_cp.ImageMap[ota_constant.ID_RFIC]; ok {
+					images[ota_constant.KEY_RFIC] = rfic.Path
+				} else if rfic, ok := dtim_cp.ImageMap[ota_constant.ID_RFI2]; ok {
+					images[ota_constant.KEY_RFIC] = rfic.Path
+				} else {
+					return fmt.Errorf("dtim and request unmatch!!!")
+				}
+			}
+
+			request.Images = images
+			request_cps_arr = append(request_cps_arr, request)
+			//			fmt.Println(request)
+		}
+
+		request.Cps = request_cps_arr
+	}
+
+	return nil
+}
+
 func ValidateNetwork(network string) error {
 	for _, _network := range cp_constant.NETWORK_LIST {
 		if strings.ToUpper(network) == _network {
