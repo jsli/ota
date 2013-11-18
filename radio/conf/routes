@@ -12,6 +12,11 @@ GET     /radio/maintain                                         Radio.Maintain
 POST    /radio/query                                            Radio.Query
 POST    /radio/ota/create                                       Radio.OtaCreate
 
+
+
+GET     /radio/release                                          Radio.ReleaseIndex
+GET     /radio/release/:fp                                      Radio.Release
+
 # Ignore favicon requests
 GET     /favicon.ico                            404
 
