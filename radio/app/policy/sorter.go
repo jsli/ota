@@ -8,6 +8,9 @@ import (
 func SortCps(update_request *models.UpdateRequest) []models.CpRequest {
 	sorted := make([]models.CpRequest, 2)
 	request_cps := update_request.Cps
+	if len(request_cps) == 1 {
+		return request_cps
+	}
 	for _, cp := range request_cps {
 		switch cp.Mode {
 		case cp_constant.MODE_HLWB, cp_constant.MODE_HLTD, cp_constant.MODE_LWG:

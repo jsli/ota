@@ -119,11 +119,13 @@ func (v *RadioValidator) CompareRequestAndDtim(request *models.UpdateRequest, dt
 		return nil
 	}
 
+	match := false
 	for mode, dtim_cp := range dtim_cps_map {
 		found := false
 		for _, request_cp := range request_cps_arr {
 			if mode == request_cp.Mode {
 				found = true
+				match = true
 				break
 			}
 		}
@@ -168,6 +170,9 @@ func (v *RadioValidator) CompareRequestAndDtim(request *models.UpdateRequest, dt
 		request.Cps = request_cps_arr
 	}
 
+	if !match {
+		return fmt.Errorf("request and dtim MODE unmatched!!!")
+	}
 	return nil
 }
 
