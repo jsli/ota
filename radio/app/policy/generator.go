@@ -243,6 +243,6 @@ func GenerateTestUpdateRequest() (string, *models.UpdateRequest) {
 		panic(err)
 	}
 	js_str := string(js_byte)
-	fmt.Println(js_str)
+//	fmt.Println(js_str)
 	return js_str, update_request
 }

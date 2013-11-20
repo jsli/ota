@@ -8,14 +8,14 @@ GET     /                                                       App.Index
 
 GET     /radio                                                  Radio.Index
 GET     /radio/maintain                                         Radio.Maintain
-
 POST    /radio/query                                            Radio.Query
 POST    /radio/ota/create                                       Radio.OtaCreate
-
-
-
 GET     /radio/release                                          Radio.ReleaseIndex
 GET     /radio/release/:fp                                      Radio.Release
+
+GET     /stat                                                   Stat.Index
+GET     /stat/self                                              Stat.Self
+GET     /stat/all                                               Stat.All
 
 # Ignore favicon requests
 GET     /favicon.ico                            404

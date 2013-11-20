@@ -13,8 +13,22 @@ import (
 	"time"
 )
 
+func init() {
+	revel.InterceptMethod(Radio.LogVisitorByIP, revel.BEFORE)
+}
+
 type Radio struct {
 	*revel.Controller
+}
+
+func (c Radio) LogVisitorByIP() revel.Result {
+	rdal, err := models.NewRedisDal()
+	if err != nil {
+		return nil
+	}
+	ip := policy.FilterIp(c.Request.RemoteAddr)
+	rdal.Incr(ip)
+	return nil
 }
 
 func (c Radio) Index() revel.Result {

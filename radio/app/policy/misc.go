@@ -60,3 +60,7 @@ func ConvertAndroidPlatform(platform string) string {
 	}
 	return platform
 }
+
+func FilterIp(ip string) string {
+	return strings.Split(ip, ":")[0]
+}
