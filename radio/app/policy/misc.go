@@ -4,9 +4,11 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
+	cp_constant "github.com/jsli/cp_release/constant"
 	"github.com/jsli/gtbox/file"
 	"github.com/jsli/gtbox/pathutil"
 	ota_constant "github.com/jsli/ota/radio/app/constant"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -63,4 +65,32 @@ func ConvertAndroidPlatform(platform string) string {
 
 func FilterIp(ip string) string {
 	return strings.Split(ip, ":")[0]
+}
+
+func GetFiltersFromFile(mode string, key string) []string {
+	path := fmt.Sprintf("%s%s_%s", cp_constant.FILTER_ROOT, mode, key)
+	content, err := file.ReadFile(path)
+	if err != nil {
+		fmt.Println(err)
+		return nil
+	}
+	content = strings.TrimSpace(content)
+	return strings.Split(content, "\n")
+}
+
+func CheckImageByFilters(image string, filters []string) bool {
+	for _, filter := range filters {
+		if strings.Contains(image, filter) {
+			return false
+		}
+	}
+	return true
+}
+
+var VersionPattern = regexp.MustCompile(`\d+\.\d+\.\w{3}`)
+
+func ReplaceVersionInPath(path string, version string) (string, error) {
+	rep := fmt.Sprintf("${1}%s", version)
+	r_path := VersionPattern.ReplaceAllString(path, rep)
+	return r_path, nil
 }

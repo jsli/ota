@@ -70,9 +70,9 @@ func ParseDtim(reader io.Reader) (*DtimInfo, error) {
 		cp_info.Sim = cp_image_list[3].Sim
 		cp_info.Version = cp_image_list[3].Version
 		cp_info.Prefix = cp_image_list[3].Prefix
-		cp_info.ImageMap[ota_constant.ID_ARB2] = cp_image_list[3]
-		cp_info.ImageMap[ota_constant.ID_GRB2] = cp_image_list[4]
-		cp_info.ImageMap[ota_constant.ID_RFI2] = cp_image_list[5]
+		cp_info.ImageMap[ota_constant.KEY_ARBEL] = cp_image_list[3]
+		cp_info.ImageMap[ota_constant.KEY_MSA] = cp_image_list[4]
+		cp_info.ImageMap[ota_constant.KEY_RFIC] = cp_image_list[5]
 		dtim_info.CpMap[cp_info.Mode] = cp_info
 		fallthrough
 	case 3:
@@ -84,9 +84,9 @@ func ParseDtim(reader io.Reader) (*DtimInfo, error) {
 		cp_info.Sim = cp_image_list[0].Sim
 		cp_info.Version = cp_image_list[0].Version
 		cp_info.Prefix = cp_image_list[0].Prefix
-		cp_info.ImageMap[ota_constant.ID_ARBI] = cp_image_list[0]
-		cp_info.ImageMap[ota_constant.ID_GRBI] = cp_image_list[1]
-		cp_info.ImageMap[ota_constant.ID_RFIC] = cp_image_list[2]
+		cp_info.ImageMap[ota_constant.KEY_ARBEL] = cp_image_list[0]
+		cp_info.ImageMap[ota_constant.KEY_MSA] = cp_image_list[1]
+		cp_info.ImageMap[ota_constant.KEY_RFIC] = cp_image_list[2]
 		dtim_info.CpMap[cp_info.Mode] = cp_info
 	case 4:
 		cp_info := &CpInfo{}
@@ -96,8 +96,8 @@ func ParseDtim(reader io.Reader) (*DtimInfo, error) {
 		cp_info.Sim = cp_image_list[2].Sim
 		cp_info.Version = cp_image_list[2].Version
 		cp_info.Prefix = cp_image_list[2].Prefix
-		cp_info.ImageMap[ota_constant.ID_ARB2] = cp_image_list[2]
-		cp_info.ImageMap[ota_constant.ID_GRB2] = cp_image_list[3]
+		cp_info.ImageMap[ota_constant.KEY_ARBEL] = cp_image_list[2]
+		cp_info.ImageMap[ota_constant.KEY_MSA] = cp_image_list[3]
 		dtim_info.CpMap[cp_info.Mode] = cp_info
 		fallthrough
 	case 2:
@@ -109,8 +109,8 @@ func ParseDtim(reader io.Reader) (*DtimInfo, error) {
 		cp_info.Sim = cp_image_list[0].Sim
 		cp_info.Version = cp_image_list[0].Version
 		cp_info.Prefix = cp_image_list[0].Prefix
-		cp_info.ImageMap[ota_constant.ID_ARBI] = cp_image_list[0]
-		cp_info.ImageMap[ota_constant.ID_GRBI] = cp_image_list[1]
+		cp_info.ImageMap[ota_constant.KEY_ARBEL] = cp_image_list[0]
+		cp_info.ImageMap[ota_constant.KEY_MSA] = cp_image_list[1]
 		dtim_info.CpMap[cp_info.Mode] = cp_info
 	default:
 		return nil, fmt.Errorf("Illegal cp information, image count must be 2 or 4, NOT %d", count)
