@@ -5,6 +5,7 @@ import (
 	cp_constant "github.com/jsli/cp_release/constant"
 	cp_policy "github.com/jsli/cp_release/policy"
 	"github.com/jsli/cp_release/release"
+	"github.com/jsli/gtbox/pathutil"
 	ota_constant "github.com/jsli/ota/radio/app/constant"
 	"github.com/jsli/ota/radio/app/models"
 	"github.com/robfig/revel"
@@ -193,11 +194,17 @@ func getGrbiList(dal *release.Dal, cp *release.CpRelease, original_grbi string) 
 	//	fmt.Println(query)
 	grbis, err := release.FindGrbiList(dal, query)
 	if err == nil && grbis != nil && len(grbis) > 0 {
+		original_name := pathutil.BaseName(original_grbi)
 		for _, grbi := range grbis {
-			grbi_list = append(grbi_list, grbi.RelPath)
+			base_name := pathutil.BaseName(grbi.RelPath)
+			if base_name == original_name {
+				grbi_list = append(grbi_list, grbi.RelPath)
+			}
 		}
 		//		fmt.Println("Find grbis by ", cp.Id, " ----", grbi_list)
-		return grbi_list, nil
+		if len(grbi_list) > 0 {
+			return grbi_list, nil
+		}
 	}
 
 	//2. search in db by other CP
