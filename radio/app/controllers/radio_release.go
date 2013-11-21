@@ -1,18 +1,9 @@
 package controllers
 
 import (
-	//	"encoding/json"
-	//	"fmt"
-	//	"github.com/jsli/cp_release/release"
-	//	ota_constant "github.com/jsli/ota/radio/app/constant"
 	"github.com/jsli/ota/radio/app/models"
-	//		"github.com/jsli/ota/radio/app/policy"
 	"github.com/robfig/revel"
-
-	//	"github.com/robfig/revel/cache"
 	"net/http"
-
-//	"time"
 )
 
 func (c Radio) ReleaseIndex() revel.Result {
