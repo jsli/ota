@@ -141,7 +141,7 @@ func getImagesByCp(dal *release.Dal, cp *release.CpRelease, cp_info *CpInfo, has
 }
 
 func getArbiList(dal *release.Dal, cp *release.CpRelease, original_arbi string) ([]string, error) {
-	arbi_list := make([]string, 0, 10)
+	arbi_list := make([]string, 0, 5)
 
 	//0. replace version
 	arbi_primary, err := ReplaceVersionInPath(original_arbi, cp.Version)
@@ -174,7 +174,56 @@ func getArbiList(dal *release.Dal, cp *release.CpRelease, original_arbi string) 
 }
 
 func getGrbiList(dal *release.Dal, cp *release.CpRelease, original_grbi string) ([]string, error) {
-	grbi_list := make([]string, 0, 10)
+	//0. search in primary CP
+	grbi_list, err := doGetGrbiList(dal, cp, original_grbi)
+	if err == nil && grbi_list != nil && len(grbi_list) > 0 {
+		return grbi_list, nil
+	}
+
+	query := fmt.Sprintf("SELECT * FROM %s where cp_id=%d AND flag=%d", cp_constant.TABLE_GRBI, cp.Id, cp_constant.AVAILABLE_FLAG)
+	grbis, err := release.FindGrbiList(dal, query)
+	if err == nil && grbis != nil && len(grbis) > 0 {
+		for _, grbi := range grbis {
+			grbi_list = append(grbi_list, grbi.RelPath)
+		}
+		if len(grbi_list) > 0 {
+			return grbi_list, nil
+		}
+	}
+
+	//1. search in lower CP by replacing version and comparing basename
+	query = fmt.Sprintf("SELECT * FROM %s WHERE mode='%s' AND sim='%s' AND prefix='%s' AND version_scalar<%d  AND flag=%d ORDER BY version_scalar DESC",
+		cp_constant.TABLE_CP, cp.Mode, cp.Sim, cp.Prefix, cp.VersionScalar, cp_constant.AVAILABLE_FLAG)
+	cps, err := release.FindCpReleaseList(dal, query)
+	if err != nil {
+		return nil, err
+	}
+	for _, _cp := range cps {
+		grbi_list, err := doGetGrbiList(dal, _cp, original_grbi)
+		if err == nil && grbi_list != nil && len(grbi_list) > 0 {
+			return grbi_list, nil
+		}
+	}
+
+	//2. search any available msa in lower CP
+	for _, _cp := range cps {
+		query = fmt.Sprintf("SELECT * FROM %s where cp_id=%d AND flag=%d", cp_constant.TABLE_GRBI, _cp.Id, cp_constant.AVAILABLE_FLAG)
+		grbis, err := release.FindGrbiList(dal, query)
+		if err == nil && grbis != nil && len(grbis) > 0 {
+			for _, grbi := range grbis {
+				grbi_list = append(grbi_list, grbi.RelPath)
+			}
+			if len(grbi_list) > 0 {
+				return grbi_list, nil
+			}
+		}
+	}
+
+	return nil, nil
+}
+
+func doGetGrbiList(dal *release.Dal, cp *release.CpRelease, original_grbi string) ([]string, error) {
+	grbi_list := make([]string, 0, 5)
 
 	//0. replace version
 	grbi_primary, err := ReplaceVersionInPath(original_grbi, cp.Version)
@@ -189,9 +238,8 @@ func getGrbiList(dal *release.Dal, cp *release.CpRelease, original_grbi string) 
 		}
 	}
 
-	//1. search in db by current CP
+	//1. searching by basename
 	query := fmt.Sprintf("SELECT * FROM %s where cp_id=%d AND flag=%d", cp_constant.TABLE_GRBI, cp.Id, cp_constant.AVAILABLE_FLAG)
-	//	fmt.Println(query)
 	grbis, err := release.FindGrbiList(dal, query)
 	if err == nil && grbis != nil && len(grbis) > 0 {
 		original_name := pathutil.BaseName(original_grbi)
@@ -201,46 +249,16 @@ func getGrbiList(dal *release.Dal, cp *release.CpRelease, original_grbi string) 
 				grbi_list = append(grbi_list, grbi.RelPath)
 			}
 		}
-		//		fmt.Println("Find grbis by ", cp.Id, " ----", grbi_list)
 		if len(grbi_list) > 0 {
 			return grbi_list, nil
 		}
 	}
 
-	//2. search in db by other CP
-	query = fmt.Sprintf("SELECT * FROM %s WHERE mode='%s' AND sim='%s' AND prefix='%s' AND version_scalar<%d  AND flag=%d ORDER BY version_scalar DESC",
-		cp_constant.TABLE_CP, cp.Mode, cp.Sim, cp.Prefix, cp.VersionScalar, cp_constant.AVAILABLE_FLAG)
-	cps, err := release.FindCpReleaseList(dal, query)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, _cp := range cps {
-		query = fmt.Sprintf("SELECT * FROM %s where cp_id=%d AND flag=%d", cp_constant.TABLE_GRBI, _cp.Id, cp_constant.AVAILABLE_FLAG)
-		grbis, err := release.FindGrbiList(dal, query)
-		if err != nil {
-			return nil, err
-		}
-
-		if len(grbis) == 0 {
-			continue
-		}
-
-		for _, grbi := range grbis {
-			grbi_list = append(grbi_list, grbi.RelPath)
-		}
-		break
-	}
-
-	if len(grbi_list) == 0 {
-		return nil, fmt.Errorf("Cannot find the right Image.")
-	}
-
-	return grbi_list, nil
+	return nil, fmt.Errorf("Cannot find grbi")
 }
 
 func getRficList(dal *release.Dal, cp *release.CpRelease, original_rfic string) ([]string, error) {
-	rfic_list := make([]string, 0, 10)
+	rfic_list := make([]string, 0, 5)
 
 	//0. replace version
 	rfic_primary, err := ReplaceVersionInPath(original_rfic, cp.Version)
