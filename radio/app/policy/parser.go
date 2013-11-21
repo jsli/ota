@@ -171,6 +171,11 @@ func ParseDtimWithByte(dtim_byte []byte) ([][]string, error) {
 		if len(image) < 4 {
 			return nil, fmt.Errorf("Empty dtim %s", dtim_byte)
 		}
+
+		if index := strings.Index(image, "&"); index >= 0 {
+			image = image[:index]
+		}
+
 		if ValidateImageId(image[:4]) == nil {
 			data[index] = make([]string, 0, 10)
 			counter += counter
