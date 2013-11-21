@@ -5,9 +5,9 @@
 module:testrunner
 
 GET     /                                                       App.Index
+GET     /maintenance                                            App.Maintenance
 
 GET     /radio                                                  Radio.Index
-GET     /radio/maintain                                         Radio.Maintain
 POST    /radio/query                                            Radio.Query
 POST    /radio/ota/create                                       Radio.OtaCreate
 GET     /radio/release                                          Radio.ReleaseIndex

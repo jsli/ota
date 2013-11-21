@@ -9,7 +9,6 @@ import (
 	"github.com/jsli/ota/radio/app/policy"
 	"github.com/robfig/revel"
 	"github.com/robfig/revel/cache"
-	"net/http"
 	"time"
 )
 
@@ -18,7 +17,12 @@ func init() {
 }
 
 type Radio struct {
-	*revel.Controller
+	App
+}
+
+func (c Radio) Index() revel.Result {
+	_, j := policy.GenerateTestUpdateRequest()
+	return c.RenderJson(j)
 }
 
 func (c Radio) LogVisitorByIP() revel.Result {
@@ -31,80 +35,34 @@ func (c Radio) LogVisitorByIP() revel.Result {
 	return nil
 }
 
-func (c Radio) Index() revel.Result {
-	if checkMaintain() {
-		return c.Redirect("/radio/maintain")
-	}
-	_, j := policy.GenerateTestUpdateRequest()
-	return c.RenderJson(j)
-}
-
-func (c Radio) Maintain() revel.Result {
-	result := models.NewMaintainResult()
-	return c.RenderJson(result)
-}
-
-func checkMaintain() bool {
-	result, found := revel.Config.Bool("maintain")
-	if found && result {
-		return true
-	}
-	return false
-}
-
 func (c Radio) OtaCreate() revel.Result {
-	if checkMaintain() {
-		return c.Redirect("/radio/maintain")
-	}
-
-	revel.INFO.Println("OtaCreate request: ", c.Request)
 	result := models.NewRadioOtaReleaseResult()
-
 	validator := &policy.RadioValidator{}
 	dtim_info, err := validator.ValidateAndParseRadioDtim(c.Params)
 	if err != nil {
-		revel.ERROR.Println("http.StatusBadRequest: ", err)
-		c.Response.Status = http.StatusBadRequest
-		result.Extra.ErrorCode = ota_constant.ERROR_CODE_DROPPED
-		result.Extra.ErrorMessage = fmt.Sprintf("%s", err)
-		return c.RenderJson(result)
+		return c.Render400(result, err)
 	}
 
 	update_request, err := validator.ValidateUpdateRequest(c.Params)
 	if err != nil {
-		revel.ERROR.Println("http.StatusBadRequest: ", err)
-		c.Response.Status = http.StatusBadRequest
-		result.Extra.ErrorCode = ota_constant.ERROR_CODE_DROPPED
-		result.Extra.ErrorMessage = fmt.Sprintf("%s", err)
-		return c.RenderJson(result)
+		return c.Render400(result, err)
 	}
 
 	err = validator.CompareRequestAndDtim(update_request, dtim_info)
 	if err != nil {
-		revel.ERROR.Println("http.StatusBadRequest: ", err)
-		c.Response.Status = http.StatusBadRequest
-		result.Extra.ErrorCode = ota_constant.ERROR_CODE_DROPPED
-		result.Extra.ErrorMessage = fmt.Sprintf("%s", err)
-		return c.RenderJson(result)
+		return c.Render400(result, err)
 	}
 
 	update_request.Cps = policy.SortCps(update_request)
 	request_json_byte, err := json.Marshal(update_request)
 	if err != nil {
-		revel.ERROR.Println("http.StatusBadRequest: ", err)
-		c.Response.Status = http.StatusBadRequest
-		result.Extra.ErrorCode = ota_constant.ERROR_CODE_DROPPED
-		result.Extra.ErrorMessage = fmt.Sprintf("%s", err)
-		return c.RenderJson(result)
+		return c.Render400(result, err)
 	}
 	request_json := string(request_json_byte)
 
 	dal, err := models.NewDal()
 	if err != nil {
-		revel.ERROR.Println("http.StatusInternalServerError: ", err)
-		c.Response.Status = http.StatusInternalServerError
-		result.Extra.ErrorCode = ota_constant.ERROR_CODE_DROPPED
-		return c.RenderJson(result)
+		return c.Render500(result, err)
 	}
 	defer dal.Close()
 
@@ -118,17 +76,17 @@ func (c Radio) OtaCreate() revel.Result {
 
 	radio, err := policy.ProvideRadioRelease(dal, dtim_info, result, fp)
 	if err != nil {
-		revel.ERROR.Println("http.StatusInternalServerError: ", err)
-		c.Response.Status = http.StatusInternalServerError
-		result.Extra.ErrorCode = ota_constant.ERROR_CODE_DROPPED
-		return c.RenderJson(result)
+		return c.Render500(result, err)
 	}
 
 	if radio == nil {
 		task, err := models.FindReleaseCreationTaskByFp(dal, fp)
 		if err != nil {
-			revel.ERROR.Println("FindReleaseCreationTaskByFp failed: ", err)
 		}
+		var (
+			err_code int
+			err_msg  string
+		)
 		if task == nil {
 			task := &models.ReleaseCreationTask{}
 			task.Flag = ota_constant.FLAG_INIT
@@ -142,45 +100,40 @@ func (c Radio) OtaCreate() revel.Result {
 
 			id, err := task.Save(dal)
 			if id < 0 || err != nil {
-				revel.ERROR.Println("http.StatusInternalServerError: ", err)
-				result.Extra.ErrorCode = ota_constant.ERROR_CODE_CREATE_REQUEST_FAILED
-				result.Extra.ErrorMessage = "Create creation task Failed, try later"
+				err_code = ota_constant.ERROR_CODE_CREATE_REQUEST_FAILED
+				err_msg = "Create creation task Failed, try later"
 			} else {
-				revel.INFO.Println("OtaCreate request, create task: ", task.UpdateRequest)
-				result.Extra.ErrorCode = ota_constant.ERROR_CODE_NOT_CREATED
-				result.Extra.ErrorMessage = "Update package will be created later"
+				err_code = ota_constant.ERROR_CODE_NOT_CREATED
+				err_msg = "Update package will be created later"
 			}
 		} else {
 			switch task.Flag {
 			case ota_constant.FLAG_DISABLE:
 				fallthrough
 			case ota_constant.FLAG_DROPPED:
-				result.Extra.ErrorCode = ota_constant.ERROR_CODE_DROPPED
-				result.Extra.ErrorMessage = "Bad creation task, drop it"
+				err_code = ota_constant.ERROR_CODE_DROPPED
+				err_msg = "Bad creation task, drop it"
 			case ota_constant.FLAG_AVAILABLE:
 				fallthrough
 			case ota_constant.FLAG_INIT:
-				result.Extra.ErrorCode = ota_constant.ERROR_CODE_NOT_CREATED
-				result.Extra.ErrorMessage = "Update package will be created later"
+				err_code = ota_constant.ERROR_CODE_NOT_CREATED
+				err_msg = "Update package will be created later"
 			case ota_constant.FLAG_CREATING:
-				result.Extra.ErrorCode = ota_constant.ERROR_CODE_CREATING
-				result.Extra.ErrorMessage = "Update package is creating"
+				err_code = ota_constant.ERROR_CODE_CREATING
+				err_msg = "Update package is creating"
 			case ota_constant.FLAG_CREATED:
-				result.Extra.ErrorCode = ota_constant.ERROR_CODE_NOERR
-				result.Extra.ErrorMessage = nil
+				err_code = ota_constant.ERROR_CODE_NOERR
+				err_msg = ""
 			case ota_constant.FLAG_CREATE_FAILED:
-				result.Extra.ErrorCode = ota_constant.ERROR_CODE_CREATE_REQUEST_FAILED
-				result.Extra.ErrorMessage = "Update package created failed"
+				err_code = ota_constant.ERROR_CODE_CREATE_REQUEST_FAILED
+				err_msg = "Update package created failed"
 			default:
-				result.Extra.ErrorCode = ota_constant.ERROR_CODE_NOERR
-				result.Extra.ErrorMessage = nil
+				err_code = ota_constant.ERROR_CODE_NOERR
+				err_msg = ""
 			}
 		}
-
-		c.Response.Status = http.StatusNotFound
-		return c.RenderJson(result)
+		return c.Render404WithCode(result, err_code, err_msg)
 	} else {
-		revel.INFO.Println("OtaCreate, find release: ", radio)
 		result.Data.Url = fmt.Sprintf("http://%s/static/%s/%s", c.Request.Host, radio.FingerPrint, ota_constant.RADIO_OTA_PACKAGE_NAME)
 		result.Data.Md5 = radio.Md5
 		result.Data.Size = radio.Size
@@ -193,47 +146,32 @@ func (c Radio) OtaCreate() revel.Result {
 }
 
 func (c Radio) Query() revel.Result {
-	if checkMaintain() {
-		return c.Redirect("/radio/maintain")
-	}
-
-	revel.INFO.Println("Query request: ", c.Request)
+	result := models.NewQueryResult()
 	validator := &policy.RadioValidator{}
 	dtim_info, err := validator.ValidateAndParseRadioDtim(c.Params)
 	if err != nil {
-		revel.ERROR.Println("http.StatusBadRequest: ", err)
-		c.Response.Status = http.StatusBadRequest
-		return c.RenderJson(nil)
+		return c.Render400(result, err)
+	}
+
+	if err := cache.Get(dtim_info.MD5Dtim, result); err == nil {
+		return c.RenderJson(result)
 	}
 
 	dal, err := release.NewDal()
 	if err != nil {
-		revel.ERROR.Println("http.StatusInternalServerError: ", err)
-		c.Response.Status = http.StatusInternalServerError
-		return c.RenderJson(nil)
+		return c.Render500(result, err)
 	}
 	defer dal.Close()
 
-	var result_cached models.QueryResult
-	if err := cache.Get(dtim_info.MD5Dtim, &result_cached); err == nil {
-		return c.RenderJson(result_cached)
-	}
-
-	result := models.NewQueryResult()
 	err = policy.ProvideQueryData(dal, dtim_info, result)
 	if err != nil {
-		revel.ERROR.Println("http.StatusInternalServerError: ", err)
-		c.Response.Status = http.StatusInternalServerError
-		result.Extra.ErrorMessage = err
-		return c.RenderJson(result)
+		return c.Render500(result, err)
 	} else {
 		if result.Data.Available == nil || len(result.Data.Available) == 0 {
-			c.Response.Status = http.StatusNotFound
-			return c.RenderJson(nil)
+			return c.Render404(result, nil)
 		}
 	}
 
-	revel.INFO.Println("Query request, result: ", result)
 	cache.Set(dtim_info.MD5Dtim, result, 60*time.Second)
 	return c.RenderJson(result)
 }
