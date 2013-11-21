@@ -136,26 +136,20 @@ func (v *RadioValidator) CompareRequestAndDtim(request *models.UpdateRequest, dt
 			request.Version = dtim_cp.Version
 			images := make(map[string]string)
 
-			if arbi, ok := dtim_cp.ImageMap[ota_constant.ID_ARBI]; ok {
-				images[ota_constant.KEY_ARBEL] = arbi.Path
-			} else if arbi, ok := dtim_cp.ImageMap[ota_constant.ID_ARB2]; ok {
+			if arbi, ok := dtim_cp.ImageMap[ota_constant.KEY_ARBEL]; ok {
 				images[ota_constant.KEY_ARBEL] = arbi.Path
 			} else {
 				return fmt.Errorf("dtim and request unmatch!!!")
 			}
 
-			if grbi, ok := dtim_cp.ImageMap[ota_constant.ID_GRBI]; ok {
-				images[ota_constant.KEY_MSA] = grbi.Path
-			} else if grbi, ok := dtim_cp.ImageMap[ota_constant.ID_GRB2]; ok {
+			if grbi, ok := dtim_cp.ImageMap[ota_constant.KEY_MSA]; ok {
 				images[ota_constant.KEY_MSA] = grbi.Path
 			} else {
 				return fmt.Errorf("dtim and request unmatch!!!")
 			}
 
 			if dtim_info.HasRFIC {
-				if rfic, ok := dtim_cp.ImageMap[ota_constant.ID_RFIC]; ok {
-					images[ota_constant.KEY_RFIC] = rfic.Path
-				} else if rfic, ok := dtim_cp.ImageMap[ota_constant.ID_RFI2]; ok {
+				if rfic, ok := dtim_cp.ImageMap[ota_constant.KEY_RFIC]; ok {
 					images[ota_constant.KEY_RFIC] = rfic.Path
 				} else {
 					return fmt.Errorf("dtim and request unmatch!!!")
