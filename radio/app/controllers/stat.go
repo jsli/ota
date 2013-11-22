@@ -20,6 +20,7 @@ func (c Stat) Self() revel.Result {
 	if err != nil {
 		return c.RenderJson(err)
 	}
+	defer rdal.Close()
 	ip := policy.FilterIp(c.Request.RemoteAddr)
 	counter, err := rdal.Get(ip)
 	if err != nil {
@@ -38,6 +39,7 @@ func (c Stat) All() revel.Result {
 	if err != nil {
 		return c.RenderJson(err)
 	}
+	defer rdal.Close()
 
 	result := models.StatAllResult{}
 	result.Detail = make(map[string]int)
