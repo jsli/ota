@@ -173,7 +173,7 @@ func ParseDtimWithByte(dtim_byte []byte) ([][]string, error) {
 			return nil, fmt.Errorf("Empty dtim %s", dtim_byte)
 		}
 
-		if index := strings.Index(image, "&"); index >= 0 {
+		if index := strings.Index(image, "@"); index >= 0 {
 			image = image[:index]
 		}
 
