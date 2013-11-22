@@ -13,7 +13,7 @@ import (
 )
 
 func init() {
-	//	revel.InterceptMethod(Radio.LogVisitorByIP, revel.BEFORE)
+	revel.InterceptMethod(Radio.LogVisitorByIP, revel.BEFORE)
 }
 
 type Radio struct {
@@ -30,6 +30,7 @@ func (c Radio) LogVisitorByIP() revel.Result {
 	if err != nil {
 		return nil
 	}
+	defer rdal.Close()
 	ip := policy.FilterIp(c.Request.RemoteAddr)
 	rdal.Incr(ip)
 	return nil
