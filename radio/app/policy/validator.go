@@ -91,6 +91,15 @@ func (v *RadioValidator) ValidateUpdateRequest(params *revel.Params) (*models.Up
 }
 
 func (v *RadioValidator) ValidateAndParseRadioDtim(params *revel.Params) (*DtimInfo, error) {
+	dtim_byte, err := readDtimByte(params)
+	if err != nil {
+		return nil, err
+	}
+
+	return ParseDtim(dtim_byte)
+}
+
+func readDtimByte(params *revel.Params) ([]byte, error) {
 	fh_arr, ok := params.Files[ota_constant.RADIO_DTIM_NAME]
 	if !ok || len(fh_arr) <= 0 {
 		return nil, fmt.Errorf("Post request lost file : %s", ota_constant.RADIO_DTIM_NAME)
@@ -102,7 +111,12 @@ func (v *RadioValidator) ValidateAndParseRadioDtim(params *revel.Params) (*DtimI
 	}
 	defer input.Close()
 
-	return ParseDtim(input)
+	buffer := make([]byte, 4096)
+	n, err := input.Read(buffer)
+	if err != nil {
+		return nil, err
+	}
+	return buffer[:n], nil
 }
 
 func (v *RadioValidator) CompareRequestAndDtim(request *models.UpdateRequest, dtim_info *DtimInfo) error {

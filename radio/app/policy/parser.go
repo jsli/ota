@@ -26,9 +26,9 @@ func ParseRequest(request_str string) (*models.UpdateRequest, error) {
 	return update_request, nil
 }
 
-func ParseDtim(reader io.Reader) (*DtimInfo, error) {
-	binary_data, images, err := ParseDtimWithReader(reader)
-	//	images, err := ota_constant.TestDataLTER, nil
+func ParseDtim(dtim_byte []byte) (*DtimInfo, error) {
+	//	binary_data, images, err := ParseDtimWithReader(reader)
+	images, err := ParseDtimWithByte(dtim_byte)
 	if err != nil {
 		return nil, err
 	}
@@ -43,7 +43,7 @@ func ParseDtim(reader io.Reader) (*DtimInfo, error) {
 
 	count := len(images)
 	dtim_info := &DtimInfo{}
-	dtim_info.BinaryData = binary_data
+	dtim_info.BinaryData = dtim_byte
 	cp_image_list := make([]*CpImage, count)
 	for index, image := range images {
 		if len(image) != 4 {
@@ -116,7 +116,7 @@ func ParseDtim(reader io.Reader) (*DtimInfo, error) {
 		return nil, fmt.Errorf("Illegal cp information, image count must be 2 or 4, NOT %d", count)
 	}
 
-	dtim_info.MD5Dtim = Md5Dtim(binary_data)
+	dtim_info.MD5Dtim = Md5Dtim(dtim_byte)
 	return dtim_info, nil
 }
 
@@ -148,6 +148,7 @@ func ParseDtimWithFile(path string) ([]byte, [][]string, error) {
 	if err != nil {
 		return nil, nil, err
 	}
+	defer dtim.Close()
 
 	data, err := ParseDtimWithByte(buffer)
 	return buffer, data, err
