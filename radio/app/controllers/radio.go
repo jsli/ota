@@ -13,7 +13,7 @@ import (
 )
 
 func init() {
-	revel.InterceptMethod(Radio.LogVisitorByIP, revel.BEFORE)
+	//	revel.InterceptMethod(Radio.LogVisitorByIP, revel.BEFORE)
 }
 
 type Radio struct {
