@@ -111,6 +111,10 @@ const (
 	TIME_FMT = "2006-01-02 15:04:05"
 )
 
+const (
+	QUERY_MODE_STRICT = true
+)
+
 var (
 	MODEL_TO_TEMPLATE = map[string]string{
 		MODEL_1088: TEMPLATE_HELAN_ROOT,
