@@ -42,8 +42,8 @@ func ProvideQueryData(dal *release.Dal, dtim_info *DtimInfo, result *models.Quer
 		if err != nil {
 			return err
 		}
-		filterByParams(data, dtim_info)
-		filterByRuleFile(data, cp_info)
+//		filterByParams(data, dtim_info)
+//		filterByRuleFile(data, cp_info)
 		available[cp_info.Mode] = data
 	}
 	result.Data.Available = available
