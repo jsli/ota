@@ -94,3 +94,13 @@ func ReplaceVersionInPath(path string, version string) (string, error) {
 	r_path := VersionPattern.ReplaceAllString(path, rep)
 	return r_path, nil
 }
+
+func TrimArrayTail(slice []string) []string {
+	for {
+		if slice[len(slice)-1] != "" {
+			break
+		}
+		slice = slice[:len(slice)-1]
+	}
+	return slice
+}

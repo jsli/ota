@@ -46,12 +46,15 @@ func ParseDtim(dtim_byte []byte) (*DtimInfo, error) {
 	dtim_info.BinaryData = dtim_byte
 	cp_image_list := make([]*CpImage, count)
 	for index, image := range images {
-		if len(image) != 4 {
-			return nil, fmt.Errorf("Illegal image information, image's attr count must be 4, NOT %d", len(image))
+		if len(image) < 4 {
+			return nil, fmt.Errorf("Parse image info failed: less attr. image = %s", image)
 		}
 
 		cp_image := &CpImage{}
-		cp_image.LoadSelf(image)
+		load_err := cp_image.LoadSelf(image)
+		if load_err != nil {
+			return nil, load_err
+		}
 
 		err := cp_image.Validate()
 		if err != nil {
@@ -165,12 +168,13 @@ func ParseDtimWithByte(dtim_byte []byte) ([][]string, error) {
 		return nil, fmt.Errorf("Empty dtim %s", dtim_byte)
 	}
 
-	image_list := strings.Split(text, "\n")
+	image_list := strings.Split(strings.TrimSpace(text), "\n")
+	image_list = TrimArrayTail(image_list)
 
 	counter := 0
 	for index, image := range image_list {
 		if len(image) < 4 {
-			return nil, fmt.Errorf("Empty dtim %s", dtim_byte)
+			return nil, fmt.Errorf("Illegal image info %s", image)
 		}
 
 		if index := strings.Index(image, "@"); index >= 0 {
