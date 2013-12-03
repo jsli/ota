@@ -33,16 +33,24 @@ func (ci CpImage) String() string {
 		ci.Id, ci.Network, ci.Sim, ci.Path, ci.Prefix, ci.Version, ci.Mode)
 }
 
-func (ci *CpImage) LoadSelf(attrs []string) {
+func (ci *CpImage) LoadSelf(attrs []string) error {
 	ci.Id = attrs[0]
 	ci.Network = attrs[1]
 	ci.Sim = attrs[2]
 	ci.Path = attrs[3]
 
-	slice := strings.Split(attrs[3], "/")
+	slice := strings.Split(strings.TrimSpace(ci.Path), "/")
+	slice = TrimArrayTail(slice)
+	if len(slice) < 3 {
+		return fmt.Errorf("Parse image path failed. path = %s", ci.Path)
+	}
 	ci.Mode = slice[1]
 	ci.Version = cp_policy.ExtractVersion(slice[2])
+	if ci.Version == "" {
+		return fmt.Errorf("Parse version from image path failed. path = %s", ci.Path)
+	}
 	ci.Prefix = strings.TrimSuffix(slice[2], ci.Version)
+	return nil
 }
 
 func (ci *CpImage) Validate() (err error) {
