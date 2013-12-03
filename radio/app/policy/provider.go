@@ -42,8 +42,8 @@ func ProvideQueryData(dal *release.Dal, dtim_info *DtimInfo, result *models.Quer
 		if err != nil {
 			return err
 		}
-//		filterByParams(data, dtim_info)
-//		filterByRuleFile(data, cp_info)
+		//		filterByParams(data, dtim_info)
+		//		filterByRuleFile(data, cp_info)
 		available[cp_info.Mode] = data
 	}
 	result.Data.Available = available
@@ -157,19 +157,22 @@ func getArbiList(dal *release.Dal, cp *release.CpRelease, original_arbi string) 
 	}
 
 	//1. search in db
-	query := fmt.Sprintf("SELECT * FROM %s where cp_id=%d AND flag=%d", cp_constant.TABLE_ARBI, cp.Id, cp_constant.AVAILABLE_FLAG)
-	arbis, err := release.FindArbiList(dal, query)
-	if err != nil {
-		return nil, err
+	if !ota_constant.QUERY_MODE_STRICT {
+		query := fmt.Sprintf("SELECT * FROM %s where cp_id=%d AND flag=%d", cp_constant.TABLE_ARBI, cp.Id, cp_constant.AVAILABLE_FLAG)
+		arbis, err := release.FindArbiList(dal, query)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(arbis) == 0 {
+			return nil, fmt.Errorf("Cannot find the right Image.")
+		}
+
+		for _, arbi := range arbis {
+			arbi_list = append(arbi_list, arbi.RelPath)
+		}
 	}
 
-	if len(arbis) == 0 {
-		return nil, fmt.Errorf("Cannot find the right Image.")
-	}
-
-	for _, arbi := range arbis {
-		arbi_list = append(arbi_list, arbi.RelPath)
-	}
 	return arbi_list, nil
 }
 
@@ -274,19 +277,22 @@ func getRficList(dal *release.Dal, cp *release.CpRelease, original_rfic string) 
 	}
 
 	//1. search in db
-	query := fmt.Sprintf("SELECT * FROM %s where cp_id=%d AND flag=%d", cp_constant.TABLE_RFIC, cp.Id, cp_constant.AVAILABLE_FLAG)
-	rfics, err := release.FindRficList(dal, query)
-	if err != nil {
-		return nil, err
+	if !ota_constant.QUERY_MODE_STRICT {
+		query := fmt.Sprintf("SELECT * FROM %s where cp_id=%d AND flag=%d", cp_constant.TABLE_RFIC, cp.Id, cp_constant.AVAILABLE_FLAG)
+		rfics, err := release.FindRficList(dal, query)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(rfics) == 0 {
+			return nil, fmt.Errorf("Cannot find the right Image.")
+		}
+
+		for _, rfic := range rfics {
+			rfic_list = append(rfic_list, rfic.RelPath)
+		}
 	}
 
-	if len(rfics) == 0 {
-		return nil, fmt.Errorf("Cannot find the right Image.")
-	}
-
-	for _, rfic := range rfics {
-		rfic_list = append(rfic_list, rfic.RelPath)
-	}
 	return rfic_list, nil
 }
 
