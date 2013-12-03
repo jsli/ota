@@ -4,10 +4,12 @@ import (
 	"fmt"
 	cp_constant "github.com/jsli/cp_release/constant"
 	cp_policy "github.com/jsli/cp_release/policy"
+	"github.com/jsli/cp_release/release"
 	ota_constant "github.com/jsli/ota/radio/app/constant"
 	"github.com/jsli/ota/radio/app/models"
 	"github.com/robfig/revel"
 	"net/url"
+	"reflect"
 	"strings"
 )
 
@@ -54,9 +56,35 @@ func (ci *CpImage) LoadSelf(attrs []string) error {
 }
 
 func (ci *CpImage) Validate() (err error) {
-	err = ValidateSim(ci.Sim)
-	err = ValidateNetwork(ci.Network)
-	return err
+	if err := ValidateSim(ci.Sim); err != nil {
+		return err
+	}
+	if err := ValidateNetwork(ci.Network); err != nil {
+		return err
+	}
+
+	dal, err := release.NewDal()
+	if err != nil {
+		return fmt.Errorf("Validate dtim error")
+	}
+	defer dal.Close()
+
+	var image interface{}
+	switch ci.Id {
+	case ota_constant.ID_ARBI, ota_constant.ID_ARB2:
+		image, _ = release.FindArbiByPath(dal, ci.Path)
+	case ota_constant.ID_GRBI, ota_constant.ID_GRB2:
+		image, _ = release.FindGrbiByPath(dal, ci.Path)
+	case ota_constant.ID_RFIC, ota_constant.ID_RFI2:
+		image, _ = release.FindRficByPath(dal, ci.Path)
+	}
+
+	v := reflect.ValueOf(image)
+	if v.IsNil() {
+		return fmt.Errorf("Illegal image path in dtim: %s", ci.Path)
+	}
+
+	return nil
 }
 
 type CpInfo struct {
