@@ -116,7 +116,7 @@ func ParseDtim(dtim_byte []byte) (*DtimInfo, error) {
 		cp_info.ImageMap[ota_constant.KEY_MSA] = cp_image_list[1]
 		dtim_info.CpMap[cp_info.Mode] = cp_info
 	default:
-		return nil, fmt.Errorf("Illegal cp information, image count must be 2 or 4, NOT %d", count)
+		return nil, fmt.Errorf("Illegal cp information, image count must be 2, 4 or 6, NOT %d", count)
 	}
 
 	dtim_info.MD5Dtim = Md5Dtim(dtim_byte)

@@ -41,6 +41,10 @@ func (c App) Render400(err_if models.ErrorInterface, err error) revel.Result {
 		ota_constant.ERROR_CODE_DROPPED, fmt.Sprintf("%s", err))
 }
 
+func (c App) Render400WithCode(err_if models.ErrorInterface, code int, err string) revel.Result {
+	return c.RenderStatusAndCode(err_if, http.StatusBadRequest, code, err)
+}
+
 func (c App) Render500(err_if models.ErrorInterface, err error) revel.Result {
 	return c.RenderError(err_if, http.StatusInternalServerError,
 		ota_constant.ERROR_CODE_DROPPED, fmt.Sprintf("%s", err))
@@ -52,6 +56,9 @@ func (c App) Render404(err_if models.ErrorInterface, err error) revel.Result {
 }
 
 func (c App) Render404WithCode(err_if models.ErrorInterface, code int, err string) revel.Result {
-	return c.RenderError(err_if, http.StatusNotFound,
-		code, err)
+	return c.RenderStatusAndCode(err_if, http.StatusNotFound, code, err)
+}
+
+func (c App) RenderStatusAndCode(err_if models.ErrorInterface, status int, code int, err string) revel.Result {
+	return c.RenderError(err_if, status, code, err)
 }
