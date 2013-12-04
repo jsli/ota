@@ -46,9 +46,13 @@ func ProvideQueryData(dal *release.Dal, dtim_info *DtimInfo, result *models.Quer
 		//		filterByRuleFile(data, cp_info)
 		available[cp_info.Mode] = data
 	}
+
+	if len(available) == 0 || len(current) == 0 {
+		return fmt.Errorf(ota_constant.ERROR_MSG_NO_AVAILABLE_CP)
+	}
+
 	result.Data.Available = available
 	result.Data.Current = current
-
 	return nil
 }
 
@@ -95,18 +99,16 @@ func getCpAndImages(dal *release.Dal, cp_info *CpInfo, hasRFIC bool) (models.Ava
 		return nil, err
 	}
 
-	if cp_list != nil {
-		data := models.AvailableCpComponent{}
-		for _, cp := range cp_list {
-			images_list, err := getImagesByCp(dal, cp, cp_info, hasRFIC)
-			if err != nil {
-				continue
-			}
-			data[cp.Version] = images_list
+	data := models.AvailableCpComponent{}
+	for _, cp := range cp_list {
+		images_list, err := getImagesByCp(dal, cp, cp_info, hasRFIC)
+		if err != nil {
+			continue
 		}
-		return data, nil
+		data[cp.Version] = images_list
 	}
-	return nil, nil
+
+	return data, nil
 }
 
 func getImagesByCp(dal *release.Dal, cp *release.CpRelease, cp_info *CpInfo, hasRFIC bool) (models.ImagesList, error) {
@@ -115,26 +117,29 @@ func getImagesByCp(dal *release.Dal, cp *release.CpRelease, cp_info *CpInfo, has
 	if err != nil {
 		return nil, err
 	}
-	if arbi_list != nil {
-		data[ota_constant.KEY_ARBEL] = arbi_list
+	if arbi_list == nil || len(arbi_list) == 0 {
+		return nil, fmt.Errorf(ota_constant.ERROR_MSG_NO_AVAILABLE_IMAGE, ota_constant.KEY_ARBEL)
 	}
+	data[ota_constant.KEY_ARBEL] = arbi_list
 
 	grbi_list, err := getGrbiList(dal, cp, cp_info.ImageMap[ota_constant.KEY_MSA].Path)
 	if err != nil {
 		return nil, err
 	}
-	if grbi_list != nil {
-		data[ota_constant.KEY_MSA] = grbi_list
+	if grbi_list == nil || len(grbi_list) == 0 {
+		return nil, fmt.Errorf(ota_constant.ERROR_MSG_NO_AVAILABLE_IMAGE, ota_constant.KEY_MSA)
 	}
+	data[ota_constant.KEY_MSA] = grbi_list
 
 	if hasRFIC {
 		rfic_list, err := getRficList(dal, cp, cp_info.ImageMap[ota_constant.KEY_RFIC].Path)
 		if err != nil {
 			return nil, err
 		}
-		if rfic_list != nil {
-			data[ota_constant.KEY_RFIC] = rfic_list
+		if rfic_list == nil || len(rfic_list) == 0 {
+			return nil, fmt.Errorf(ota_constant.ERROR_MSG_NO_AVAILABLE_IMAGE, ota_constant.KEY_RFIC)
 		}
+		data[ota_constant.KEY_RFIC] = rfic_list
 	}
 
 	return data, nil
@@ -324,9 +329,6 @@ func getCpList(dal *release.Dal, cp_info *CpInfo) ([]*release.CpRelease, error) 
 	}
 	cp_list = append(cp_list, list...)
 
-	if len(cp_list) == 0 {
-		return nil, nil
-	}
 	return cp_list, nil
 }
 
@@ -336,9 +338,5 @@ func doGetCpList(dal *release.Dal, query string) ([]*release.CpRelease, error) {
 		return nil, err
 	}
 
-	if len(cps) > 0 {
-		return cps, nil
-	} else {
-		return nil, nil
-	}
+	return cps, nil
 }

@@ -151,7 +151,7 @@ func (c Radio) Query() revel.Result {
 	validator := &policy.RadioValidator{}
 	dtim_info, err := validator.ValidateAndParseRadioDtim(c.Params)
 	if err != nil {
-		return c.Render400(result, err)
+		return c.Render400WithCode(result, ota_constant.ERROR_CODE_INVALIDATED_DTIM, fmt.Sprintf("%s", err))
 	}
 
 	if err := cache.Get(dtim_info.MD5Dtim, result); err == nil {
@@ -166,11 +166,7 @@ func (c Radio) Query() revel.Result {
 
 	err = policy.ProvideQueryData(dal, dtim_info, result)
 	if err != nil {
-		return c.Render500(result, err)
-	} else {
-		if result.Data.Available == nil || len(result.Data.Available) == 0 {
-			return c.Render404(result, nil)
-		}
+		return c.Render404WithCode(result, ota_constant.ERROR_CODE_NO_AVAILABLE_UPDATE, fmt.Sprintf("%s", err))
 	}
 
 	cache.Set(dtim_info.MD5Dtim, result, 60*time.Second)
