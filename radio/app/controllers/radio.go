@@ -46,7 +46,8 @@ func (c Radio) OtaCreate() revel.Result {
 
 	update_request, err := validator.ValidateUpdateRequest(c.Params)
 	if err != nil {
-		return c.Render400(result, err)
+		return c.Render400WithCode(result, ota_constant.ERROR_CODE_INVALIDATED_REQUEST,
+			fmt.Sprintf(ota_constant.ERROR_MSG_NO_ILLEGAL_REQUEST, update_request))
 	}
 
 	err = validator.CompareRequestAndDtim(update_request, dtim_info)
