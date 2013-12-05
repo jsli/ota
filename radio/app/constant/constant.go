@@ -105,9 +105,11 @@ const (
 	ERROR_CODE_MAINTAIN              = 128
 	ERROR_CODE_INVALIDATED_DTIM      = 256
 	ERROR_CODE_NO_AVAILABLE_UPDATE   = 512
+	ERROR_CODE_INVALIDATED_REQUEST   = 1024
 
 	ERROR_MSG_NO_AVAILABLE_CP    = "Cannot find available CP release."
 	ERROR_MSG_NO_AVAILABLE_IMAGE = "Cannot find available image [%s]."
+	ERROR_MSG_NO_ILLEGAL_REQUEST = "Illegal update request: [%s]."
 
 	RETRY_COUNT = 5
 )
