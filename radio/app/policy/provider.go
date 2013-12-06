@@ -11,7 +11,15 @@ import (
 	"github.com/robfig/revel"
 )
 
-func ProvideRadioRelease(dal *models.Dal, dtim_info *DtimInfo, result *models.RadioOtaReleaseResult, fp string) (*models.RadioOtaRelease, error) {
+type ContentProvider interface {
+	ProvideRadioRelease(dal *models.Dal, dtim_info *DtimInfo, fp string) (*models.RadioOtaRelease, error)
+	ProvideQueryData(dal *release.Dal, dtim_info *DtimInfo, result models.DataSetter) error
+}
+
+type CommonContentProvider struct {
+}
+
+func (ccp *CommonContentProvider) ProvideRadioRelease(dal *models.Dal, dtim_info *DtimInfo, fp string) (*models.RadioOtaRelease, error) {
 	query := fmt.Sprintf("SELECT * FROM %s WHERE fingerprint='%s' AND flag=%d LIMIT 1",
 		ota_constant.TABLE_RADIO_OTA_RELEASE, fp, ota_constant.FLAG_AVAILABLE)
 	revel.INFO.Println("query radio ota release: ", query)
@@ -26,38 +34,8 @@ func ProvideRadioRelease(dal *models.Dal, dtim_info *DtimInfo, result *models.Ra
 	return nil, nil
 }
 
-func ProvideQueryData(dal *release.Dal, dtim_info *DtimInfo, result *models.QueryResult) error {
-	current := models.CurrentCps{}
-	available := models.AvailableCps{}
-	for _, cp_info := range dtim_info.CpMap {
-		images := getCurrentCpImages(cp_info)
-		if len(images) >= 2 {
-			ccc := models.CurrentCpComponent{}
-			ccc.Version = cp_info.Version
-			ccc.Images = images
-			current[cp_info.Mode] = ccc
-		}
-
-		data, err := getCpAndImages(dal, cp_info, dtim_info.HasRFIC)
-		if err != nil {
-			return err
-		}
-		//		filterByParams(data, dtim_info)
-		//		filterByRuleFile(data, cp_info)
-		available[cp_info.Mode] = data
-	}
-
-	if len(available) == 0 || len(current) == 0 {
-		return fmt.Errorf(ota_constant.ERROR_MSG_NO_AVAILABLE_CP)
-	}
-
-	result.Data.Available = available
-	result.Data.Current = current
-	return nil
-}
-
-func getCurrentCpImages(cp_info *CpInfo) models.Images {
-	data := models.Images{}
+func getCurrentCpImages(cp_info *CpInfo) map[string]string {
+	data := make(map[string]string)
 	for key, value := range cp_info.ImageMap {
 		data[key] = value.Path
 	}
@@ -65,41 +43,16 @@ func getCurrentCpImages(cp_info *CpInfo) models.Images {
 }
 
 /*
- * distinguish FF and DKB, unuse now because FF's model also is DKB
+ *    [version]     [image_id]  [image_list]
+ * map[string]   map[string]    []string
  */
-func filterByParams(data models.AvailableCpComponent, dtim_info *DtimInfo) {
-}
-
-func filterByRuleFile(data models.AvailableCpComponent, cp_info *CpInfo) {
-	filter_map := make(map[string][]string)
-	for _, key := range ota_constant.KEY_LIST {
-		filter_map[key] = GetFiltersFromFile(cp_info.Mode, key)
-	}
-
-	for key, _ := range data {
-		original_data := data[key]
-		for key, value := range original_data {
-			filter := filter_map[key]
-			filtered := make([]string, 0, 10)
-			for _, path := range value {
-				if CheckImageByFilters(path, filter) {
-					filtered = append(filtered, path)
-				} else {
-					//					fmt.Println("drop ------------", path)
-				}
-			}
-			original_data[key] = filtered
-		}
-	}
-}
-
-func getCpAndImages(dal *release.Dal, cp_info *CpInfo, hasRFIC bool) (models.AvailableCpComponent, error) {
+func getCpAndImages(dal *release.Dal, cp_info *CpInfo, hasRFIC bool) (map[string]map[string][]string, error) {
 	cp_list, err := getCpList(dal, cp_info)
 	if err != nil {
 		return nil, err
 	}
 
-	data := models.AvailableCpComponent{}
+	data := make(map[string]map[string][]string)
 	for _, cp := range cp_list {
 		images_list, err := getImagesByCp(dal, cp, cp_info, hasRFIC)
 		if err != nil {
@@ -111,8 +64,8 @@ func getCpAndImages(dal *release.Dal, cp_info *CpInfo, hasRFIC bool) (models.Ava
 	return data, nil
 }
 
-func getImagesByCp(dal *release.Dal, cp *release.CpRelease, cp_info *CpInfo, hasRFIC bool) (models.ImagesList, error) {
-	data := models.ImagesList{}
+func getImagesByCp(dal *release.Dal, cp *release.CpRelease, cp_info *CpInfo, hasRFIC bool) (map[string][]string, error) {
+	data := make(map[string][]string)
 	arbi_list, err := getArbiList(dal, cp, cp_info.ImageMap[ota_constant.KEY_ARBEL].Path)
 	if err != nil {
 		return nil, err

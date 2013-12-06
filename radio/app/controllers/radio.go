@@ -3,21 +3,24 @@ package controllers
 import (
 	"encoding/json"
 	"fmt"
+	"time"
+
 	"github.com/jsli/cp_release/release"
 	ota_constant "github.com/jsli/ota/radio/app/constant"
 	"github.com/jsli/ota/radio/app/models"
 	"github.com/jsli/ota/radio/app/policy"
 	"github.com/robfig/revel"
-	"github.com/robfig/revel/cache"
-	"time"
 )
 
 func init() {
 	revel.InterceptMethod(Radio.LogVisitorByIP, revel.BEFORE)
+	revel.InterceptMethod((*Radio).Prepare, revel.BEFORE)
 }
 
 type Radio struct {
 	App
+	ApiVersion string
+	Provider   policy.ContentProvider
 }
 
 func (c Radio) Index() revel.Result {
@@ -36,8 +39,29 @@ func (c Radio) LogVisitorByIP() revel.Result {
 	return nil
 }
 
+func (c *Radio) Prepare() revel.Result {
+	if c.Request.Method == "GET" {
+		return nil
+	}
+
+	var api_version string = ""
+	c.Params.Bind(&api_version, ota_constant.REQUEST_PARAM_APIVERSION)
+	c.ApiVersion = api_version
+
+	switch api_version {
+	case ota_constant.API_VERSION_1_0:
+		c.Provider = new(policy.ContentProviderV1)
+	case ota_constant.API_VERSION_2_0:
+		c.Provider = new(policy.ContentProviderV2)
+	default:
+		c.ApiVersion = ota_constant.API_VERSION_1_0
+		c.Provider = new(policy.ContentProviderV1)
+	}
+	return nil
+}
+
 func (c Radio) OtaCreate() revel.Result {
-	result := models.NewRadioOtaReleaseResult()
+	result := models.NewResult()
 	validator := &policy.RadioValidator{}
 	dtim_info, err := validator.ValidateAndParseRadioDtim(c.Params)
 	if err != nil {
@@ -72,11 +96,7 @@ func (c Radio) OtaCreate() revel.Result {
 	fp := policy.GenerateOtaPackageFingerPrint(sorted_image_list)
 	fp = fmt.Sprintf("%s.%s.%s", update_request.Device.Model, update_request.Device.Platform, fp)
 
-	if err := cache.Get(fp, &result); err == nil {
-		return c.RenderJson(result)
-	}
-
-	radio, err := policy.ProvideRadioRelease(dal, dtim_info, result, fp)
+	radio, err := c.Provider.ProvideRadioRelease(dal, dtim_info, fp)
 	if err != nil {
 		return c.Render500(result, err)
 	}
@@ -136,27 +156,23 @@ func (c Radio) OtaCreate() revel.Result {
 		}
 		return c.Render404WithCode(result, err_code, err_msg)
 	} else {
-		result.Data.Url = fmt.Sprintf("http://%s/static/%s/%s", c.Request.Host, radio.FingerPrint, ota_constant.RADIO_OTA_PACKAGE_NAME)
-		result.Data.Md5 = radio.Md5
-		result.Data.Size = radio.Size
-		result.Data.CreatedTime = policy.FormatTime(radio.CreatedTs)
-
-		cache.Set(fp, result, 60*time.Second)
+		data := models.ReleaseResultData{}
+		data.Url = fmt.Sprintf("http://%s/static/%s/%s", c.Request.Host, radio.FingerPrint, ota_constant.RADIO_OTA_PACKAGE_NAME)
+		data.Md5 = radio.Md5
+		data.Size = radio.Size
+		data.CreatedTime = policy.FormatTime(radio.CreatedTs)
+		result.SetData(data)
 	}
 
 	return c.RenderJson(result)
 }
 
 func (c Radio) Query() revel.Result {
-	result := models.NewQueryResult()
+	result := models.NewResult()
 	validator := &policy.RadioValidator{}
 	dtim_info, err := validator.ValidateAndParseRadioDtim(c.Params)
 	if err != nil {
 		return c.Render400WithCode(result, ota_constant.ERROR_CODE_INVALIDATED_DTIM, fmt.Sprintf("%s", err))
-	}
-
-	if err := cache.Get(dtim_info.MD5Dtim, result); err == nil {
-		return c.RenderJson(result)
 	}
 
 	dal, err := release.NewDal()
@@ -165,11 +181,10 @@ func (c Radio) Query() revel.Result {
 	}
 	defer dal.Close()
 
-	err = policy.ProvideQueryData(dal, dtim_info, result)
+	err = c.Provider.ProvideQueryData(dal, dtim_info, result)
 	if err != nil {
 		return c.Render404WithCode(result, ota_constant.ERROR_CODE_NO_AVAILABLE_UPDATE, fmt.Sprintf("%s", err))
 	}
 
-	cache.Set(dtim_info.MD5Dtim, result, 60*time.Second)
 	return c.RenderJson(result)
 }
