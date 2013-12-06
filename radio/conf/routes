@@ -5,13 +5,14 @@
 module:testrunner
 
 GET     /                                                       App.Index
+GET     /apis                                                   App.Apis
 GET     /maintenance                                            App.Maintenance
 
 GET     /radio                                                  Radio.Index
 POST    /radio/query                                            Radio.Query
 POST    /radio/ota/create                                       Radio.OtaCreate
-GET     /radio/release                                          Radio.ReleaseIndex
-GET     /radio/release/:fp                                      Radio.Release
+GET     /radio/ota/release                                      Radio.ReleaseIndex
+GET     /radio/ota/release/:fp                                  Radio.Release
 
 GET     /stat                                                   Stat.Index
 GET     /stat/self                                              Stat.Self

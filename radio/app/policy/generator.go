@@ -218,7 +218,7 @@ func GenerateTestUpdateRequest() (string, *models.UpdateRequest) {
 
 	hltd := models.CpRequest{}
 	hltd.Mode = "HLTD"
-	hltd.Version = "2.59.000"
+	hltd.Version = "2.58.000"
 	hltd_images := make(map[string]string)
 	hltd_images["ARBEL"] = "HL/HLTD/HLTD_CP_2.58.000/Seagull/HL_TD_CP.bin"
 	hltd_images["MSA"] = "HL/HLTD/HLTD_CP_2.58.000/HLTD_MSA_2.58.000/A0/HL_TD_M08_AI_A0_Flash.bin"
@@ -226,15 +226,15 @@ func GenerateTestUpdateRequest() (string, *models.UpdateRequest) {
 	hltd.Images = hltd_images
 	cps = append(cps, hltd)
 
-	//	hltd_dsds := models.CpRequest{}
-	//	hltd_dsds.Mode = "HLWB_DSDS"
-	//	hltd_dsds.Version = "2.64.000"
-	//	hltd_dsds_images := make(map[string]string)
-	//	hltd_dsds_images["ARBEL"] = "HL_DSDS/HLWB_DSDS/HLWB_CP_2.64.000/Seagull_DSDS/HL_WB_DSDS_CP.bin"
-	//	hltd_dsds_images["MSA"] = "HL_DSDS/HLWB_DSDS/HLWB_CP_2.64.000/HLWB_MSA_2.64.000/HELAN_A0_M16_AI_DSDS_Flash.bin"
+	hltd_dsds := models.CpRequest{}
+	hltd_dsds.Mode = "HLWB_DSDS"
+	hltd_dsds.Version = "3.48.000"
+	hltd_dsds_images := make(map[string]string)
+	hltd_dsds_images["ARBEL"] = "HL_DSDS/HLTD_DSDS/HLTD_DSDS_CP_3.48.000/Seagull_DSDS/HL_TD_DSDS_CP.bin"
+	hltd_dsds_images["MSA"] = "HL_DSDS/HLTD_DSDS/HLTD_DSDS_CP_3.48.000/HLTD_DSDS_MSA_3.48.000/A0/HL_TD_M08_AI_A0_DSDS_Flash.bin"
 	//	hltd_dsds_images["RFIC"] = "LTE/LTG/HL_CP_3.41.000/RFIC/1920_FF/Skylark_LTG.bin"
-	//	hltd_dsds.Images = hltd_dsds_images
-	//	cps = append(cps, hltd_dsds)
+	hltd_dsds.Images = hltd_dsds_images
+	cps = append(cps, hltd_dsds)
 
 	update_request.Cps = cps
 
@@ -243,6 +243,6 @@ func GenerateTestUpdateRequest() (string, *models.UpdateRequest) {
 		panic(err)
 	}
 	js_str := string(js_byte)
-//	fmt.Println(js_str)
+	//	fmt.Println(js_str)
 	return js_str, update_request
 }

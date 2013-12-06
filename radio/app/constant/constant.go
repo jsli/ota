@@ -67,6 +67,12 @@ const (
 	KEY_CREATED_TIME     = "created_time"
 	KEY_ERROR            = "error"
 
+	RESULT_KEY_IMAGE_NAME    = "image_name"
+	RESULT_KEY_IMAGE_ARRAY   = "image_array"
+	RESULT_KEY_MODE_NAME     = "mode_name"
+	RESULT_KEY_VERSION_ARRAY = "version_array"
+	RESULT_KEY_VERSION_NO    = "version_no"
+
 	TAG_1088   = "1088"
 	TAG_1T88   = "1T88"
 	TAG_1920   = "1920"
@@ -80,6 +86,13 @@ const (
 
 	BOARD_FF  = "FF"
 	BOARD_DKB = "DKB"
+)
+
+const (
+	REQUEST_PARAM_APIVERSION = "api_version"
+	API_VERSION_1_0          = "1.0"
+	API_VERSION_2_0          = "2.0"
+	CURRENT_API_VERSION      = API_VERSION_2_0
 )
 
 //database

@@ -10,6 +10,9 @@ type MaintainResult struct {
 
 func NewMaintainResult() *MaintainResult {
 	result := MaintainResult{}
-	result.Extra = ExtraInfo{ApiVersion: API_VERSION, ErrorCode: ota_constant.ERROR_CODE_MAINTAIN, ErrorMessage: "Maintain"}
+	result.Extra = new(ExtraInfo)
+	result.Extra.SetApiVersion(ota_constant.CURRENT_API_VERSION)
+	result.Extra.SetErrorCode(ota_constant.ERROR_CODE_MAINTAIN)
+	result.Extra.SetErrorMessage("Maintain")
 	return &result
 }
