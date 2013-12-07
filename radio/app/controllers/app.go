@@ -32,7 +32,8 @@ func (c App) Apis() revel.Result {
 func (c App) Maintenance() revel.Result {
 	result, found := revel.Config.Bool("maintenance")
 	if found && result {
-		result := models.NewMaintainResult()
+		result := models.NewResult()
+		result.SetErrorMessage("Maintenance")
 		return c.RenderJson(result)
 	}
 	return nil
