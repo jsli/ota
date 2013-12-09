@@ -43,7 +43,7 @@ func (cpv2 *ContentProviderV2) ProvideQueryData(dal *release.Dal, dtim_info *Dti
 		mode_node := models.ModeNode{}
 		mode_node.Mode = mode
 		version_count := len(versions)
-		mode_node.CpArray = make([]models.CpNode, 0, version_count)
+		cp_array := make([]models.CpNode, 0, version_count)
 		for version, images := range versions {
 			cp := models.CpNode{}
 			image_count := len(images)
@@ -64,8 +64,9 @@ func (cpv2 *ContentProviderV2) ProvideQueryData(dal *release.Dal, dtim_info *Dti
 			}
 			cp.VersionNo = version
 			cp.ImageArray = image_array
-			mode_node.CpArray = append(mode_node.CpArray, cp)
+			cp_array = append(cp_array, cp)
 		}
+		mode_node.CpArray = SortCpArray(cp_array)
 
 		switch mode {
 		case cp_constant.MODE_HLWB, cp_constant.MODE_HLTD, cp_constant.MODE_LWG:
