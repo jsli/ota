@@ -2,6 +2,7 @@ package policy
 
 import (
 	"fmt"
+	"regexp"
 
 	cp_constant "github.com/jsli/cp_release/constant"
 	cp_policy "github.com/jsli/cp_release/policy"
@@ -9,6 +10,10 @@ import (
 	ota_constant "github.com/jsli/ota/radio/app/constant"
 	"github.com/jsli/ota/radio/app/models"
 	"github.com/robfig/revel"
+)
+
+var (
+	VersionExtractPattern = regexp.MustCompile(`\d+\.\d+\.\d+`)
 )
 
 type ContentProvider interface {
@@ -202,6 +207,7 @@ func getGrbiList(dal *release.Dal, cp *release.CpRelease, original_grbi string) 
 }
 
 func doGetGrbiList(dal *release.Dal, cp *release.CpRelease, original_grbi string) ([]string, error) {
+	path_suffix := filterVersionOfPath(original_grbi)
 	grbi_list := make([]string, 0, 5)
 
 	//find any MSA in current CP
@@ -209,7 +215,9 @@ func doGetGrbiList(dal *release.Dal, cp *release.CpRelease, original_grbi string
 	grbis, err := release.FindGrbiList(dal, query)
 	if err == nil && grbis != nil && len(grbis) > 0 {
 		for _, grbi := range grbis {
-			grbi_list = append(grbi_list, grbi.RelPath)
+			if checkPath(grbi.RelPath, path_suffix) {
+				grbi_list = append(grbi_list, grbi.RelPath)
+			}
 		}
 
 		if len(grbi_list) > 0 {
@@ -309,6 +317,7 @@ func getRficList(dal *release.Dal, cp *release.CpRelease, original_rfic string) 
 }
 
 func doGetRficList(dal *release.Dal, cp *release.CpRelease, original_rfic string) ([]string, error) {
+	path_suffix := filterVersionOfPath(original_rfic)
 	rfic_list := make([]string, 0, 5)
 
 	//find any rfic in current CP
@@ -316,7 +325,9 @@ func doGetRficList(dal *release.Dal, cp *release.CpRelease, original_rfic string
 	rfics, err := release.FindRficList(dal, query)
 	if err == nil && rfics != nil && len(rfics) > 0 {
 		for _, rfic := range rfics {
-			rfic_list = append(rfic_list, rfic.RelPath)
+			if checkPath(rfic.RelPath, path_suffix) {
+				rfic_list = append(rfic_list, rfic.RelPath)
+			}
 		}
 
 		if len(rfic_list) > 0 {
@@ -365,4 +376,29 @@ func doGetCpList(dal *release.Dal, query string) ([]*release.CpRelease, error) {
 	}
 
 	return cps, nil
+}
+
+func checkPath(path string, path_suffix string) bool {
+	if filterVersionOfPath(path) == path_suffix {
+		//		fmt.Println(path, "\n", path_suffix, "\n-----------------------------------")
+		return true
+	} else {
+		return false
+	}
+}
+
+func filterVersionOfPath(path string) string {
+	index_array := VersionExtractPattern.FindAllStringIndex(path, -1)
+	var arr_len int
+	if index_array != nil {
+		arr_len = len(index_array)
+		if arr_len <= 0 {
+			return path
+		}
+	} else {
+		return path
+	}
+
+	index := index_array[arr_len-1]
+	return path[index[1]:]
 }
