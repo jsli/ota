@@ -2,10 +2,10 @@ package policy
 
 import (
 	"fmt"
+
 	cp_constant "github.com/jsli/cp_release/constant"
 	cp_policy "github.com/jsli/cp_release/policy"
 	"github.com/jsli/cp_release/release"
-	"github.com/jsli/gtbox/pathutil"
 	ota_constant "github.com/jsli/ota/radio/app/constant"
 	"github.com/jsli/ota/radio/app/models"
 	"github.com/robfig/revel"
@@ -141,6 +141,23 @@ func getGrbiList(dal *release.Dal, cp *release.CpRelease, original_grbi string) 
 		return grbi_list, nil
 	}
 
+	max_version := cp.VersionScalar
+	min_version := (max_version/1000000)*1000000 + 484848
+
+	query := fmt.Sprintf("SELECT * FROM %s WHERE mode='%s' AND sim='%s' AND prefix='%s' AND version_scalar<%d AND version_scalar >=%d AND flag=%d ORDER BY version_scalar DESC",
+		cp_constant.TABLE_CP, cp.Mode, cp.Sim, cp.Prefix, max_version, min_version, cp_constant.AVAILABLE_FLAG)
+	cps, err := release.FindCpReleaseList(dal, query)
+	if err != nil {
+		return nil, err
+	}
+	for _, _cp := range cps {
+		grbi_list, err := doGetGrbiList(dal, _cp, original_grbi)
+		if err == nil && grbi_list != nil && len(grbi_list) > 0 {
+			return grbi_list, nil
+		}
+	}
+
+	/*********************************************************************
 	query := fmt.Sprintf("SELECT * FROM %s where cp_id=%d AND flag=%d", cp_constant.TABLE_GRBI, cp.Id, cp_constant.AVAILABLE_FLAG)
 	grbis, err := release.FindGrbiList(dal, query)
 	if err == nil && grbis != nil && len(grbis) > 0 {
@@ -179,6 +196,7 @@ func getGrbiList(dal *release.Dal, cp *release.CpRelease, original_grbi string) 
 			}
 		}
 	}
+	*********************************************************************/
 
 	return nil, nil
 }
@@ -186,6 +204,20 @@ func getGrbiList(dal *release.Dal, cp *release.CpRelease, original_grbi string) 
 func doGetGrbiList(dal *release.Dal, cp *release.CpRelease, original_grbi string) ([]string, error) {
 	grbi_list := make([]string, 0, 5)
 
+	//find any MSA in current CP
+	query := fmt.Sprintf("SELECT * FROM %s where cp_id=%d AND flag=%d", cp_constant.TABLE_GRBI, cp.Id, cp_constant.AVAILABLE_FLAG)
+	grbis, err := release.FindGrbiList(dal, query)
+	if err == nil && grbis != nil && len(grbis) > 0 {
+		for _, grbi := range grbis {
+			grbi_list = append(grbi_list, grbi.RelPath)
+		}
+
+		if len(grbi_list) > 0 {
+			return grbi_list, nil
+		}
+	}
+
+	/*********************************************************************
 	//0. replace version
 	grbi_primary, err := ReplaceVersionInPath(original_grbi, cp.Version)
 	if err == nil && grbi_primary != "" {
@@ -214,13 +246,34 @@ func doGetGrbiList(dal *release.Dal, cp *release.CpRelease, original_grbi string
 			return grbi_list, nil
 		}
 	}
+	*********************************************************************/
 
 	return nil, fmt.Errorf("Cannot find grbi")
 }
 
 func getRficList(dal *release.Dal, cp *release.CpRelease, original_rfic string) ([]string, error) {
-	rfic_list := make([]string, 0, 5)
+	rfic_list, err := doGetRficList(dal, cp, original_rfic)
+	if err == nil && rfic_list != nil && len(rfic_list) > 0 {
+		return rfic_list, nil
+	}
 
+	max_version := cp.VersionScalar
+	min_version := (max_version/1000000)*1000000 + 484848
+
+	query := fmt.Sprintf("SELECT * FROM %s WHERE mode='%s' AND sim='%s' AND prefix='%s' AND version_scalar<%d AND version_scalar >=%d AND flag=%d ORDER BY version_scalar DESC",
+		cp_constant.TABLE_CP, cp.Mode, cp.Sim, cp.Prefix, max_version, min_version, cp_constant.AVAILABLE_FLAG)
+	cps, err := release.FindCpReleaseList(dal, query)
+	if err != nil {
+		return nil, err
+	}
+	for _, _cp := range cps {
+		rfic_list, err := doGetRficList(dal, _cp, original_rfic)
+		if err == nil && rfic_list != nil && len(rfic_list) > 0 {
+			return rfic_list, nil
+		}
+	}
+
+	/*******************************************************************
 	//0. replace version
 	rfic_primary, err := ReplaceVersionInPath(original_rfic, cp.Version)
 	if err == nil && rfic_primary != "" {
@@ -250,8 +303,28 @@ func getRficList(dal *release.Dal, cp *release.CpRelease, original_rfic string) 
 			rfic_list = append(rfic_list, rfic.RelPath)
 		}
 	}
+	****************************************************************************/
 
-	return rfic_list, nil
+	return nil, nil
+}
+
+func doGetRficList(dal *release.Dal, cp *release.CpRelease, original_rfic string) ([]string, error) {
+	rfic_list := make([]string, 0, 5)
+
+	//find any rfic in current CP
+	query := fmt.Sprintf("SELECT * FROM %s where cp_id=%d AND flag=%d", cp_constant.TABLE_RFIC, cp.Id, cp_constant.AVAILABLE_FLAG)
+	rfics, err := release.FindRficList(dal, query)
+	if err == nil && rfics != nil && len(rfics) > 0 {
+		for _, rfic := range rfics {
+			rfic_list = append(rfic_list, rfic.RelPath)
+		}
+
+		if len(rfic_list) > 0 {
+			return rfic_list, nil
+		}
+	}
+
+	return nil, fmt.Errorf("Cannot find rfic")
 }
 
 func getCpList(dal *release.Dal, cp_info *CpInfo) ([]*release.CpRelease, error) {
