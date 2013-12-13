@@ -56,9 +56,9 @@ func (ci *CpImage) LoadSelf(attrs []string) error {
 }
 
 func (ci *CpImage) Validate() (err error) {
-	if err := ValidateSim(ci.Sim); err != nil {
-		return err
-	}
+	//	if err := ValidateSim(ci.Sim); err != nil {
+	//		return err
+	//	}
 	if err := ValidateNetwork(ci.Network); err != nil {
 		return err
 	}
