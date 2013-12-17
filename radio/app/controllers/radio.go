@@ -13,7 +13,7 @@ import (
 )
 
 func init() {
-	revel.InterceptMethod(Radio.LogVisitorByIP, revel.BEFORE)
+	//revel.InterceptMethod(Radio.LogVisitorByIP, revel.BEFORE)
 	revel.InterceptMethod((*Radio).Prepare, revel.BEFORE)
 }
 
@@ -156,6 +156,7 @@ func (c Radio) OtaCreate() revel.Result {
 		}
 		return c.Render404WithCode(result, err_code, err_msg)
 	} else {
+		c.LogVisitorByIP()
 		data := models.ReleaseResultData{}
 		data.Url = fmt.Sprintf("http://%s/static/%s/%s", c.Request.Host, radio.FingerPrint, ota_constant.RADIO_OTA_PACKAGE_NAME)
 		data.Md5 = radio.Md5
