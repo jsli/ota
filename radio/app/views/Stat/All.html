@@ -1,0 +1,23 @@
+{{set . "title" "All Stat"}}
+
+<p>
+{{with .result}}
+    <h1>
+    Total Count: {{.TotalCount}}
+    </h1>
+{{end}}
+</p>
+
+<table border="1" width="400" >
+        <tr align="center">
+            <td>IP</td>
+            <td>Count</td>
+        </tr>
+
+    {{range $key, $value := .result.Detail}}
+        <tr align="center">
+            <td>{{$key}}</td>
+            <td>{{$value}}</td>
+            </tr>
+    {{end}}
+</table>

@@ -31,7 +31,7 @@ func (c Stat) Self() revel.Result {
 	result.IP = ip
 	result.Counter, _ = strconv.Atoi(counter)
 
-	return c.RenderJson(result)
+	return c.Render(result)
 }
 
 func (c Stat) All() revel.Result {
@@ -53,5 +53,5 @@ func (c Stat) All() revel.Result {
 		result.Detail[key] = count_i
 		result.TotalCount += count_i
 	}
-	return c.RenderJson(result)
+	return c.Render(result)
 }

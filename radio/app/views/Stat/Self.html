@@ -1,0 +1,15 @@
+{{set . "title" "Self Stat"}}
+
+{{with .result}}
+    <table border="1" width="400" >
+        <tr align="center">
+            <td>IP</td>
+            <td>Count</td>
+        </tr>
+
+        <tr align="center">
+            <td>{{.IP}}</td>
+            <td>{{.Counter}}</td>
+        </tr>
+    </table>
+{{end}}
